@@ -106,43 +106,48 @@ export const simulateAttack = (
 ): { attacker: Character; defender: Character; log: string[] } => {
   const logs: string[] = [];
   
+  // Step 1: Roll 1d6 for attack vs enemy armor
   const attackRoll = rollD6() + attackModifier;
   const defenderArmor = defender.armor + defender.tempArmor + getCardModifiers(defender, 'armor');
   
-  logs.push(`${attacker.name} attacks ${defender.name} (${attackRoll} vs ${defenderArmor} armor)`);
+  // Apply armor reduction from card 10 BEFORE attack roll comparison
+  let effectiveArmor = defenderArmor;
+  if (attacker.usedCards.includes(10)) {
+    effectiveArmor = Math.max(0, defenderArmor - 2);
+    logs.push(`${defender.name}'s armor reduced by 2 from armor breach effect (${defenderArmor} → ${effectiveArmor})`);
+  }
+  
+  logs.push(`${attacker.name} attacks ${defender.name} (${attackRoll} vs ${effectiveArmor} armor)`);
   
   let updatedAttacker = { ...attacker };
   let updatedDefender = { ...defender };
   
-  if (attackRoll >= defenderArmor) {
+  // Meets or beats armor = hit
+  if (attackRoll >= effectiveArmor) {
+    // Step 2: Roll 1d6 for damage (no armor reduction on damage roll)
     const damageRoll = rollD6() + damageModifier;
+    const finalDamage = damageRoll;
     
-    // Apply armor reduction from card 10
-    let effectiveArmor = defenderArmor;
-    if (attacker.usedCards.includes(10)) {
-      effectiveArmor = Math.max(0, effectiveArmor - 2);
-      logs.push(`${defender.name}'s armor reduced by 2 from armor breach effect`);
-    }
+    logs.push(`Hit! Rolling ${damageRoll} damage`);
     
-    const finalDamage = Math.max(1, damageRoll - (effectiveArmor - defenderArmor));
     const oldDefenderHp = updatedDefender.hp;
     updatedDefender.hp = Math.max(0, updatedDefender.hp - finalDamage);
     updatedDefender.isAlive = updatedDefender.hp > 0;
     
-    // Handle card 5 effect (stay at 1 HP if you hit 0)
+    // Handle card 5 effect (stay at 1 HP if you hit 0) - only if card was used this turn
     if (updatedDefender.hp === 0 && updatedDefender.usedCards.includes(5)) {
       updatedDefender.hp = 1;
       updatedDefender.isAlive = true;
       logs.push(`${defender.name} stays at 1 HP due to defensive anchor!`);
     }
     
-    logs.push(`Hit! ${defender.name} takes ${finalDamage} damage (${oldDefenderHp} → ${updatedDefender.hp}/${updatedDefender.maxHp} HP)`);
+    logs.push(`${defender.name} takes ${finalDamage} damage (${oldDefenderHp} → ${updatedDefender.hp}/${updatedDefender.maxHp} HP)`);
     
     if (updatedDefender.hp === 0) {
       logs.push(`💀 ${defender.name} has been defeated!`);
     }
     
-    // Apply thorns damage from card 8
+    // Apply thorns damage from card 8 - only if defender had card active
     if (updatedDefender.usedCards.includes(8) && oldDefenderHp > 0) {
       const oldAttackerHp = updatedAttacker.hp;
       updatedAttacker.hp = Math.max(0, updatedAttacker.hp - 2);
@@ -154,7 +159,7 @@ export const simulateAttack = (
       }
     }
   } else {
-    logs.push(`Miss! Attack blocked by armor`);
+    logs.push(`Miss! Attack failed to penetrate armor`);
   }
   
   return { attacker: updatedAttacker, defender: updatedDefender, log: logs };
@@ -183,10 +188,20 @@ export const processTurnEnd = (character: Character): Character => {
     .filter(effect => effect.turnsRemaining > 0);
   
   // Reset temporary armor at start of next turn
+  // Clear used cards that are single-use effects (not healing)
+  const clearedUsedCards = character.usedCards.filter(cardId => {
+    // Card 1 (healing) effects are permanent, keep the card as used
+    // Cards 2,3,4,6,9 are buffs that last until next turn - clear them
+    // Card 5 (defensive anchor) lasts until next turn - clear it
+    // Card 7,8,10 are effects that last until next turn - clear them
+    return cardId === 1; // Only keep healing card as permanently used
+  });
+  
   return {
     ...character,
     tempArmor: 0,
     activeEffects: updatedEffects,
+    usedCards: clearedUsedCards,
   };
 };
 
@@ -244,16 +259,22 @@ export const simulateWarRound = (
     
     const currentChar = currentGroup[currentCharIndex];
     
+    // Process turn start - clear expired effects from PREVIOUS turn
+    currentGroup[currentCharIndex] = processTurnEnd(currentChar);
+    const refreshedChar = currentGroup[currentCharIndex];
+    
+    combatLogs.push(`--- ${refreshedChar.name}'s Turn ---`);
+    
     // Pick a random card to play (if available)
-    const availableCards = currentChar.cards.filter(card => !currentChar.usedCards.includes(card));
+    const availableCards = refreshedChar.cards.filter(card => !refreshedChar.usedCards.includes(card));
     if (availableCards.length > 0) {
       const randomCard = availableCards[Math.floor(Math.random() * availableCards.length)];
-      currentChar.usedCards.push(randomCard);
+      refreshedChar.usedCards.push(randomCard);
       
       // Log card usage
-      combatLogs.push(`${currentChar.name} plays Card ${randomCard}: ${CARD_EFFECTS[randomCard as keyof typeof CARD_EFFECTS]}`);
+      combatLogs.push(`${refreshedChar.name} plays Card ${randomCard}: ${CARD_EFFECTS[randomCard as keyof typeof CARD_EFFECTS]}`);
       
-      const cardEffect = applyCardEffect(currentChar, randomCard, allCharacters);
+      const cardEffect = applyCardEffect(refreshedChar, randomCard, allCharacters);
       combatLogs.push(...cardEffect.log);
       currentGroup[currentCharIndex] = cardEffect.character;
     }
@@ -265,11 +286,11 @@ export const simulateWarRound = (
       const target = getRandomTarget(opposingGroup);
       if (target) {
         const targetIndex = opposingGroup.findIndex(c => c.id === target.id);
-        const attackModifier = getCardModifiers(currentChar, 'attack');
-        const damageModifier = getCardModifiers(currentChar, 'damage');
+        const attackModifier = getCardModifiers(currentGroup[currentCharIndex], 'attack');
+        const damageModifier = getCardModifiers(currentGroup[currentCharIndex], 'damage');
         
         const attackResult = simulateAttack(
-          currentChar,
+          currentGroup[currentCharIndex],
           opposingGroup[targetIndex],
           attackModifier,
           damageModifier
@@ -281,7 +302,7 @@ export const simulateWarRound = (
       }
     } else {
       // Defend
-      const defendResult = simulateDefend(currentChar);
+      const defendResult = simulateDefend(currentGroup[currentCharIndex]);
       currentGroup[currentCharIndex] = defendResult.character;
       combatLogs.push(...defendResult.log);
     }
@@ -292,9 +313,7 @@ export const simulateWarRound = (
     }
   }
   
-  // Process turn end effects for all characters
-  updatedGroup1 = updatedGroup1.map(processTurnEnd);
-  updatedGroup2 = updatedGroup2.map(processTurnEnd);
+  // Turn end processing is now handled per character during their turn
   
   const warComplete = isWarOver(updatedGroup1, updatedGroup2);
   let winner: string | null = null;
