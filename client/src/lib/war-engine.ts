@@ -1,4 +1,5 @@
 import type { Character, WarState, WarParticipant, ActiveEffect } from '@shared/schema';
+import { CARD_EFFECTS } from './character-generator';
 
 // Dice rolling functions
 export const rollD6 = (): number => Math.floor(Math.random() * 6) + 1;
@@ -57,32 +58,39 @@ export const applyCardEffect = (
       const healTarget = targetId ? allCharacters.find(c => c.id === targetId) : character;
       if (healTarget && healTarget.hp < healTarget.maxHp) {
         const healAmount = Math.min(2, healTarget.maxHp - healTarget.hp);
+        const oldHp = healTarget.hp;
         if (healTarget.id === character.id) {
           updatedCharacter.hp += healAmount;
+          logs.push(`${character.name} heals self for ${healAmount} HP (${oldHp} → ${updatedCharacter.hp}/${updatedCharacter.maxHp})`);
+        } else {
+          logs.push(`${character.name} heals ${healTarget.name} for ${healAmount} HP (${oldHp} → ${oldHp + healAmount}/${healTarget.maxHp})`);
         }
-        logs.push(`${character.name} heals ${healTarget.name} for ${healAmount} HP`);
+      } else {
+        logs.push(`${character.name} tries to heal but target is at full health`);
       }
       break;
     
     case 5: // Enemies focus on you; stay at 1 HP if you hit 0
-      logs.push(`${character.name} becomes a defensive anchor`);
+      logs.push(`${character.name} becomes a defensive anchor - will stay at 1 HP if reduced to 0`);
       break;
     
     case 7: // +3 Armor to ally
       if (targetId) {
         const ally = allCharacters.find(c => c.id === targetId);
         if (ally) {
-          logs.push(`${character.name} grants +3 Armor to ${ally.name}`);
+          logs.push(`${character.name} grants +3 Armor to ${ally.name} until next turn`);
         }
+      } else {
+        logs.push(`${character.name} prepares to grant +3 Armor to an ally`);
       }
       break;
     
     case 8: // Enemy that attacks you takes 2 damage
-      logs.push(`${character.name} activates thorns effect`);
+      logs.push(`${character.name} activates thorns - attackers will take 2 damage`);
       break;
     
     case 10: // Reduce enemy Armor by -2 until next turn
-      logs.push(`${character.name} applies armor reduction to enemies`);
+      logs.push(`${character.name} prepares armor breach - enemy armor will be reduced by 2`);
       break;
   }
 
@@ -113,10 +121,11 @@ export const simulateAttack = (
     let effectiveArmor = defenderArmor;
     if (attacker.usedCards.includes(10)) {
       effectiveArmor = Math.max(0, effectiveArmor - 2);
-      logs.push(`Armor reduced by 2 from armor breach effect`);
+      logs.push(`${defender.name}'s armor reduced by 2 from armor breach effect`);
     }
     
     const finalDamage = Math.max(1, damageRoll - (effectiveArmor - defenderArmor));
+    const oldDefenderHp = updatedDefender.hp;
     updatedDefender.hp = Math.max(0, updatedDefender.hp - finalDamage);
     updatedDefender.isAlive = updatedDefender.hp > 0;
     
@@ -127,13 +136,22 @@ export const simulateAttack = (
       logs.push(`${defender.name} stays at 1 HP due to defensive anchor!`);
     }
     
-    logs.push(`Hit! ${defender.name} takes ${finalDamage} damage (${updatedDefender.hp}/${updatedDefender.maxHp} HP)`);
+    logs.push(`Hit! ${defender.name} takes ${finalDamage} damage (${oldDefenderHp} → ${updatedDefender.hp}/${updatedDefender.maxHp} HP)`);
+    
+    if (updatedDefender.hp === 0) {
+      logs.push(`💀 ${defender.name} has been defeated!`);
+    }
     
     // Apply thorns damage from card 8
-    if (updatedDefender.usedCards.includes(8) && updatedDefender.isAlive) {
+    if (updatedDefender.usedCards.includes(8) && oldDefenderHp > 0) {
+      const oldAttackerHp = updatedAttacker.hp;
       updatedAttacker.hp = Math.max(0, updatedAttacker.hp - 2);
       updatedAttacker.isAlive = updatedAttacker.hp > 0;
-      logs.push(`${attacker.name} takes 2 thorns damage from ${defender.name}!`);
+      logs.push(`${attacker.name} takes 2 thorns damage from ${defender.name}! (${oldAttackerHp} → ${updatedAttacker.hp}/${updatedAttacker.maxHp} HP)`);
+      
+      if (updatedAttacker.hp === 0) {
+        logs.push(`💀 ${attacker.name} has been defeated by thorns!`);
+      }
     }
   } else {
     logs.push(`Miss! Attack blocked by armor`);
@@ -231,6 +249,9 @@ export const simulateWarRound = (
     if (availableCards.length > 0) {
       const randomCard = availableCards[Math.floor(Math.random() * availableCards.length)];
       currentChar.usedCards.push(randomCard);
+      
+      // Log card usage
+      combatLogs.push(`${currentChar.name} plays Card ${randomCard}: ${CARD_EFFECTS[randomCard as keyof typeof CARD_EFFECTS]}`);
       
       const cardEffect = applyCardEffect(currentChar, randomCard, allCharacters);
       combatLogs.push(...cardEffect.log);

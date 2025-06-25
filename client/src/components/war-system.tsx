@@ -69,17 +69,17 @@ export function WarSystem({ groups, onUpdateGroups }: WarSystemProps) {
     
     if (result.isComplete) {
       newLog.push(`WAR ENDED: ${result.winner} WINS!`);
-      
-      // Update the original groups with the war results
-      const updatedGroups = { ...groups };
-      if (warState.group1) {
-        updatedGroups[warState.group1.groupId] = result.group1;
-      }
-      if (warState.group2) {
-        updatedGroups[warState.group2.groupId] = result.group2;
-      }
-      onUpdateGroups(updatedGroups);
     }
+    
+    // Always update the groups to reflect damage and status changes
+    const updatedGroups = { ...groups };
+    if (warState.group1) {
+      updatedGroups[warState.group1.groupId] = result.group1;
+    }
+    if (warState.group2) {
+      updatedGroups[warState.group2.groupId] = result.group2;
+    }
+    onUpdateGroups(updatedGroups);
     
     setWarState(prev => ({
       ...prev,
