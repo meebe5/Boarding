@@ -96,6 +96,9 @@ The build process:
 ```
 Changelog:
 - June 25, 2025. Initial setup
+- June 25, 2025. Added PostgreSQL database integration for scenario persistence
+- June 25, 2025. Updated Card 7 effect to "+3 Armor to ally"
+- June 25, 2025. Improved armor display to show numerical values
 ```
 
 ## User Preferences

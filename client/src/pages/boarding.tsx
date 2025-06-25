@@ -1,14 +1,68 @@
 import { useState } from 'react';
-import type { Character } from '@shared/schema';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import type { Character, Scenario } from '@shared/schema';
 import { generateProfile } from '@/lib/character-generator';
 import { CharacterCard } from '@/components/character-card';
 import { GroupSidebar } from '@/components/group-sidebar';
 import { ControlPanel } from '@/components/control-panel';
 import { CardEffectsReference } from '@/components/card-effects-reference';
+import { apiRequest } from '@/lib/queryClient';
+import { useToast } from '@/hooks/use-toast';
 
 export default function BoardingPage() {
   const [groups, setGroups] = useState<Record<string, Character[]>>({});
   const [activeGroup, setActiveGroup] = useState<string | null>(null);
+  const [currentScenarioId, setCurrentScenarioId] = useState<number | null>(null);
+  const queryClient = useQueryClient();
+  const { toast } = useToast();
+
+  // Fetch scenarios from database
+  const { data: scenarios = [], isLoading } = useQuery({
+    queryKey: ['/api/scenarios'],
+    queryFn: () => apiRequest<Scenario[]>({ endpoint: '/api/scenarios' }),
+  });
+
+  // Create scenario mutation
+  const createScenarioMutation = useMutation({
+    mutationFn: (data: { name: string; groups: Record<string, Character[]> }) =>
+      apiRequest<Scenario>({
+        endpoint: '/api/scenarios',
+        method: 'POST',
+        body: data,
+      }),
+    onSuccess: (newScenario) => {
+      queryClient.invalidateQueries({ queryKey: ['/api/scenarios'] });
+      setCurrentScenarioId(newScenario.id);
+      toast({
+        title: "Success",
+        description: "Scenario saved to database",
+      });
+    },
+    onError: () => {
+      toast({
+        title: "Error",
+        description: "Failed to save scenario",
+        variant: "destructive",
+      });
+    },
+  });
+
+  // Update scenario mutation
+  const updateScenarioMutation = useMutation({
+    mutationFn: ({ id, data }: { id: number; data: { name?: string; groups?: Record<string, Character[]> } }) =>
+      apiRequest<Scenario>({
+        endpoint: `/api/scenarios/${id}`,
+        method: 'PUT',
+        body: data,
+      }),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['/api/scenarios'] });
+      toast({
+        title: "Success",
+        description: "Scenario updated",
+      });
+    },
+  });
 
   const handleGenerate = (troopCount: number) => {
     const newProfiles = Array.from({ length: troopCount }, generateProfile);
@@ -19,6 +73,8 @@ export default function BoardingPage() {
     };
     setGroups(newGroups);
     setActiveGroup(groupId);
+    // Clear current scenario ID when generating new data
+    setCurrentScenarioId(null);
   };
 
   const updateProfile = (profileId: string, updatedData: Character) => {
@@ -31,26 +87,52 @@ export default function BoardingPage() {
   };
 
   const saveScenario = () => {
-    const allSaves = JSON.parse(localStorage.getItem('boardingScenarios') || '{}');
+    if (Object.keys(groups).length === 0) {
+      toast({
+        title: "No data to save",
+        description: "Generate some characters first",
+        variant: "destructive",
+      });
+      return;
+    }
+    
     const saveName = prompt('Enter scenario name:');
     if (saveName) {
-      allSaves[saveName] = groups;
-      localStorage.setItem('boardingScenarios', JSON.stringify(allSaves));
-      alert('Scenario saved.');
+      if (currentScenarioId) {
+        // Update existing scenario
+        updateScenarioMutation.mutate({
+          id: currentScenarioId,
+          data: { name: saveName, groups },
+        });
+      } else {
+        // Create new scenario
+        createScenarioMutation.mutate({ name: saveName, groups });
+      }
     }
   };
 
   const loadScenario = () => {
-    const allSaves = JSON.parse(localStorage.getItem('boardingScenarios') || '{}');
-    const names = Object.keys(allSaves);
-    if (names.length === 0) {
-      alert('No saved scenarios found.');
+    if (scenarios.length === 0) {
+      toast({
+        title: "No scenarios",
+        description: "No saved scenarios found in database",
+      });
       return;
     }
-    const selection = prompt(`Enter scenario name to load:\n${names.join(', ')}`);
-    if (selection && allSaves[selection]) {
-      setGroups(allSaves[selection]);
-      setActiveGroup(Object.keys(allSaves[selection])[0]);
+    const names = scenarios.map(s => `${s.id}: ${s.name}`);
+    const selection = prompt(`Enter scenario ID to load:\n${names.join('\n')}`);
+    if (selection) {
+      const scenarioId = parseInt(selection.split(':')[0]);
+      const scenario = scenarios.find(s => s.id === scenarioId);
+      if (scenario) {
+        setGroups(scenario.groups);
+        setActiveGroup(Object.keys(scenario.groups)[0] || null);
+        setCurrentScenarioId(scenario.id);
+        toast({
+          title: "Success",
+          description: `Loaded scenario: ${scenario.name}`,
+        });
+      }
     }
   };
 
