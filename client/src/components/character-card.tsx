@@ -104,23 +104,23 @@ export function CharacterCard({ character, onUpdate }: CharacterCardProps) {
         <div className="mb-4">
           <div className="flex justify-between items-center mb-2">
             <label className="text-xs text-gray-400 uppercase">HEALTH POINTS</label>
-            <span className="text-sm font-mono">
+            <div className="flex items-center gap-1 text-sm font-mono">
               <Input
                 type="number"
                 min="0"
                 value={character.hp}
                 onChange={(e) => handleUpdate({ hp: Number(e.target.value) })}
-                className="w-12 text-center bg-transparent border-b border-gray-600 focus:border-blue-500 focus:outline-none inline"
+                className="w-14 text-center bg-transparent border-b border-gray-600 focus:border-blue-500 focus:outline-none"
               />
-              /
+              <span>/</span>
               <Input
                 type="number"
                 min="1"
                 value={character.maxHp}
                 onChange={(e) => handleUpdate({ maxHp: Number(e.target.value) })}
-                className="w-12 text-center bg-transparent border-b border-gray-600 focus:border-blue-500 focus:outline-none inline"
+                className="w-14 text-center bg-transparent border-b border-gray-600 focus:border-blue-500 focus:outline-none"
               />
-            </span>
+            </div>
           </div>
           <div className="w-full bg-gray-700 h-3 rounded-full overflow-hidden">
             <div 
@@ -134,10 +134,9 @@ export function CharacterCard({ character, onUpdate }: CharacterCardProps) {
         <div className="flex justify-between items-center mb-4">
           <div>
             <label className="text-xs text-gray-400 uppercase block mb-1">ARMOR</label>
-            <div className="flex gap-1">
-              {Array.from({ length: character.armor }, (_, i) => (
-                <span key={i} className="text-blue-500">🛡️</span>
-              ))}
+            <div className="flex gap-1 items-center">
+              <span className="text-blue-500 text-lg">🛡️</span>
+              <span className="text-white font-mono text-lg">{character.armor}</span>
             </div>
           </div>
           <div className="text-right">

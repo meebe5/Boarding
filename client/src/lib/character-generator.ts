@@ -26,7 +26,7 @@ export const CARD_EFFECTS = {
   4: '+2 Defense',
   5: 'Enemies focus on you; stay at 1 HP if you hit 0',
   6: '+1 Defense, +1 Attack',
-  7: '+3 Evasion to ally about to be attacked',
+  7: '+3 Armor to ally',
   8: 'Enemy that attacks you takes 2 damage',
   9: '+2 Armor until next turn',
   10: 'Reduce enemy Armor by -2 until next turn',
