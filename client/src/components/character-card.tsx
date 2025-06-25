@@ -2,7 +2,9 @@ import { useState } from 'react';
 import type { Character } from '@shared/schema';
 import { CARD_EFFECTS, updateCharacterClass, updateCharacterCon } from '@/lib/character-generator';
 import { Input } from '@/components/ui/input';
+import { Badge } from '@/components/ui/badge';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
+import { Shield, Heart, Zap, Skull } from 'lucide-react';
 
 interface CharacterCardProps {
   character: Character;
@@ -15,6 +17,7 @@ export function CharacterCard({ character, onUpdate }: CharacterCardProps) {
   const handleUpdate = (updates: Partial<Character>) => {
     const updatedCharacter = { ...character, ...updates };
     if (updates.hp !== undefined || updates.maxHp !== undefined) {
+      updatedCharacter.isAlive = updatedCharacter.hp > 0;
       setHpBarWidth((updatedCharacter.hp / updatedCharacter.maxHp) * 100);
     }
     onUpdate(updatedCharacter);
@@ -50,7 +53,7 @@ export function CharacterCard({ character, onUpdate }: CharacterCardProps) {
 
   return (
     <TooltipProvider>
-      <div className="character-card rounded-lg p-5">
+      <div className={`character-card rounded-lg p-5 relative ${!character.isAlive ? 'opacity-50 bg-red-900/20' : ''}`}>
         {/* Character Header */}
         <div className="flex justify-between items-start mb-4">
           <div className="flex-1">
@@ -62,6 +65,37 @@ export function CharacterCard({ character, onUpdate }: CharacterCardProps) {
             <div className="text-xs text-gray-400 mt-1 uppercase tracking-wide">
               OPERATIVE ID: <span>{character.id.substring(0, 8).toUpperCase()}</span>
             </div>
+          </div>
+          
+          {/* Status Icons */}
+          <div className="flex gap-1">
+            {!character.isAlive && (
+              <Badge variant="destructive" className="p-1">
+                <Skull className="w-3 h-3" />
+              </Badge>
+            )}
+            {character.activeEffects && character.activeEffects.length > 0 && (
+              <div className="flex gap-1">
+                {character.activeEffects.map((effect, index) => (
+                  <Tooltip key={index}>
+                    <TooltipTrigger asChild>
+                      <Badge variant="secondary" className="p-1 text-xs">
+                        <Zap className="w-3 h-3" />
+                        {effect.cardId}
+                      </Badge>
+                    </TooltipTrigger>
+                    <TooltipContent>
+                      <p className="text-sm">
+                        {CARD_EFFECTS[effect.cardId as keyof typeof CARD_EFFECTS]}
+                      </p>
+                      <p className="text-xs text-gray-400">
+                        From: {effect.sourceProfileName} ({effect.turnsRemaining} turns left)
+                      </p>
+                    </TooltipContent>
+                  </Tooltip>
+                ))}
+              </div>
+            )}
           </div>
         </div>
 
@@ -134,9 +168,18 @@ export function CharacterCard({ character, onUpdate }: CharacterCardProps) {
         <div className="flex justify-between items-center mb-4">
           <div>
             <label className="text-xs text-gray-400 uppercase block mb-1">ARMOR</label>
-            <div className="flex gap-1 items-center">
-              <span className="text-blue-500 text-lg">🛡️</span>
-              <span className="text-white font-mono text-lg">{character.armor}</span>
+            <div className="flex gap-2 items-center">
+              <div className="flex items-center gap-1">
+                <Shield className="w-4 h-4 text-blue-500" />
+                <span className="text-white font-mono">{character.armor}</span>
+              </div>
+              {character.tempArmor && character.tempArmor > 0 && (
+                <div className="flex items-center gap-1">
+                  <span className="text-yellow-400">+</span>
+                  <span className="text-yellow-400 font-mono">{character.tempArmor}</span>
+                  <span className="text-xs text-gray-400">TEMP</span>
+                </div>
+              )}
             </div>
           </div>
           <div className="text-right">

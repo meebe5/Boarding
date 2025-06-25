@@ -95,7 +95,15 @@ The build process:
 
 ```
 Changelog:
-- June 25, 2025. Initial setup
+- June 25, 2025: Initial tactical RPG character generator setup
+- June 25, 2025: Added WAR system with:
+  * Editable group names with inline editing
+  * Card effect indicators showing active effects on characters
+  * Turn-based combat simulation with dice rolling mechanics
+  * Group vs group battles with attack/defend actions
+  * Combat logging and war outcome tracking
+  * Character status tracking (alive/dead, temp armor, active effects)
+  * Updated character schema with new combat properties
 ```
 
 ## User Preferences

@@ -1,0 +1,301 @@
+import type { Character, WarState, WarParticipant, ActiveEffect } from '@shared/schema';
+
+// Dice rolling functions
+export const rollD6 = (): number => Math.floor(Math.random() * 6) + 1;
+export const rollD4 = (): number => Math.floor(Math.random() * 4) + 1;
+
+// Card effect modifiers
+export const getCardModifiers = (character: Character, action: 'attack' | 'damage' | 'defense' | 'armor') => {
+  let modifier = 0;
+  
+  // Check character's own used cards
+  character.usedCards.forEach(cardId => {
+    switch (cardId) {
+      case 2: // +2 Attack for your next attack
+        if (action === 'attack') modifier += 2;
+        break;
+      case 3: // +2 Damage
+        if (action === 'damage') modifier += 2;
+        break;
+      case 4: // +2 Defense
+        if (action === 'defense') modifier += 2;
+        break;
+      case 6: // +1 Defense, +1 Attack
+        if (action === 'defense') modifier += 1;
+        if (action === 'attack') modifier += 1;
+        break;
+      case 9: // +2 Armor until next turn
+        if (action === 'armor') modifier += 2;
+        break;
+    }
+  });
+
+  // Check active effects from allies
+  character.activeEffects.forEach(effect => {
+    switch (effect.cardId) {
+      case 7: // +3 Armor to ally
+        if (action === 'armor') modifier += 3;
+        break;
+    }
+  });
+
+  return modifier;
+};
+
+// Apply card effects
+export const applyCardEffect = (
+  character: Character,
+  cardId: number,
+  allCharacters: Character[],
+  targetId?: string
+): { character: Character; log: string[] } => {
+  const logs: string[] = [];
+  let updatedCharacter = { ...character };
+
+  switch (cardId) {
+    case 1: // +2 Heal [if damaged] to you or another player
+      const healTarget = targetId ? allCharacters.find(c => c.id === targetId) : character;
+      if (healTarget && healTarget.hp < healTarget.maxHp) {
+        const healAmount = Math.min(2, healTarget.maxHp - healTarget.hp);
+        if (healTarget.id === character.id) {
+          updatedCharacter.hp += healAmount;
+        }
+        logs.push(`${character.name} heals ${healTarget.name} for ${healAmount} HP`);
+      }
+      break;
+    
+    case 5: // Enemies focus on you; stay at 1 HP if you hit 0
+      logs.push(`${character.name} becomes a defensive anchor`);
+      break;
+    
+    case 7: // +3 Armor to ally
+      if (targetId) {
+        const ally = allCharacters.find(c => c.id === targetId);
+        if (ally) {
+          logs.push(`${character.name} grants +3 Armor to ${ally.name}`);
+        }
+      }
+      break;
+    
+    case 8: // Enemy that attacks you takes 2 damage
+      logs.push(`${character.name} activates thorns effect`);
+      break;
+    
+    case 10: // Reduce enemy Armor by -2 until next turn
+      logs.push(`${character.name} applies armor reduction to enemies`);
+      break;
+  }
+
+  return { character: updatedCharacter, log: logs };
+};
+
+// Simulate a single attack
+export const simulateAttack = (
+  attacker: Character,
+  defender: Character,
+  attackModifier: number = 0,
+  damageModifier: number = 0
+): { attacker: Character; defender: Character; log: string[] } => {
+  const logs: string[] = [];
+  
+  const attackRoll = rollD6() + attackModifier;
+  const defenderArmor = defender.armor + defender.tempArmor + getCardModifiers(defender, 'armor');
+  
+  logs.push(`${attacker.name} attacks ${defender.name} (${attackRoll} vs ${defenderArmor} armor)`);
+  
+  let updatedAttacker = { ...attacker };
+  let updatedDefender = { ...defender };
+  
+  if (attackRoll >= defenderArmor) {
+    const damageRoll = rollD6() + damageModifier;
+    
+    // Apply armor reduction from card 10
+    let effectiveArmor = defenderArmor;
+    if (attacker.usedCards.includes(10)) {
+      effectiveArmor = Math.max(0, effectiveArmor - 2);
+      logs.push(`Armor reduced by 2 from armor breach effect`);
+    }
+    
+    const finalDamage = Math.max(1, damageRoll - (effectiveArmor - defenderArmor));
+    updatedDefender.hp = Math.max(0, updatedDefender.hp - finalDamage);
+    updatedDefender.isAlive = updatedDefender.hp > 0;
+    
+    // Handle card 5 effect (stay at 1 HP if you hit 0)
+    if (updatedDefender.hp === 0 && updatedDefender.usedCards.includes(5)) {
+      updatedDefender.hp = 1;
+      updatedDefender.isAlive = true;
+      logs.push(`${defender.name} stays at 1 HP due to defensive anchor!`);
+    }
+    
+    logs.push(`Hit! ${defender.name} takes ${finalDamage} damage (${updatedDefender.hp}/${updatedDefender.maxHp} HP)`);
+    
+    // Apply thorns damage from card 8
+    if (updatedDefender.usedCards.includes(8) && updatedDefender.isAlive) {
+      updatedAttacker.hp = Math.max(0, updatedAttacker.hp - 2);
+      updatedAttacker.isAlive = updatedAttacker.hp > 0;
+      logs.push(`${attacker.name} takes 2 thorns damage from ${defender.name}!`);
+    }
+  } else {
+    logs.push(`Miss! Attack blocked by armor`);
+  }
+  
+  return { attacker: updatedAttacker, defender: updatedDefender, log: logs };
+};
+
+// Simulate defend action
+export const simulateDefend = (character: Character): { character: Character; log: string[] } => {
+  const logs: string[] = [];
+  const armorGain = rollD4();
+  
+  const updatedCharacter = {
+    ...character,
+    tempArmor: character.tempArmor + armorGain,
+  };
+  
+  logs.push(`${character.name} defends, gaining +${armorGain} temporary armor`);
+  
+  return { character: updatedCharacter, log: logs };
+};
+
+// Process turn end effects
+export const processTurnEnd = (character: Character): Character => {
+  // Reduce active effect durations
+  const updatedEffects = character.activeEffects
+    .map(effect => ({ ...effect, turnsRemaining: effect.turnsRemaining - 1 }))
+    .filter(effect => effect.turnsRemaining > 0);
+  
+  // Reset temporary armor at start of next turn
+  return {
+    ...character,
+    tempArmor: 0,
+    activeEffects: updatedEffects,
+  };
+};
+
+// Get random alive target from opposing group
+export const getRandomTarget = (characters: Character[]): Character | null => {
+  const aliveCharacters = characters.filter(c => c.isAlive);
+  if (aliveCharacters.length === 0) return null;
+  
+  const randomIndex = Math.floor(Math.random() * aliveCharacters.length);
+  return aliveCharacters[randomIndex];
+};
+
+// Check if war is over
+export const isWarOver = (group1: Character[], group2: Character[]): boolean => {
+  const group1Alive = group1.some(c => c.isAlive);
+  const group2Alive = group2.some(c => c.isAlive);
+  
+  return !group1Alive || !group2Alive;
+};
+
+// Simulate a complete war round
+export const simulateWarRound = (
+  group1: Character[],
+  group2: Character[],
+  currentTurn: number
+): { 
+  group1: Character[], 
+  group2: Character[], 
+  logs: string[], 
+  isComplete: boolean,
+  winner: string | null 
+} => {
+  let updatedGroup1 = [...group1];
+  let updatedGroup2 = [...group2];
+  let combatLogs: string[] = [];
+  
+  const allCharacters = [...updatedGroup1, ...updatedGroup2];
+  
+  // Determine turn order based on initiative
+  const turnOrder = allCharacters
+    .filter(c => c.isAlive)
+    .sort((a, b) => b.initiative - a.initiative);
+  
+  for (const character of turnOrder) {
+    if (!character.isAlive) continue;
+    
+    // Determine if character is from group 1 or 2
+    const isGroup1 = updatedGroup1.some(c => c.id === character.id);
+    const opposingGroup = isGroup1 ? updatedGroup2 : updatedGroup1;
+    const currentGroup = isGroup1 ? updatedGroup1 : updatedGroup2;
+    
+    // Find current character in their group
+    const currentCharIndex = currentGroup.findIndex(c => c.id === character.id);
+    if (currentCharIndex === -1) continue;
+    
+    const currentChar = currentGroup[currentCharIndex];
+    
+    // Pick a random card to play (if available)
+    const availableCards = currentChar.cards.filter(card => !currentChar.usedCards.includes(card));
+    if (availableCards.length > 0) {
+      const randomCard = availableCards[Math.floor(Math.random() * availableCards.length)];
+      currentChar.usedCards.push(randomCard);
+      
+      const cardEffect = applyCardEffect(currentChar, randomCard, allCharacters);
+      combatLogs.push(...cardEffect.log);
+      currentGroup[currentCharIndex] = cardEffect.character;
+    }
+    
+    // Decide between attack or defend (80% attack, 20% defend)
+    const actionRoll = Math.random();
+    if (actionRoll < 0.8) {
+      // Attack
+      const target = getRandomTarget(opposingGroup);
+      if (target) {
+        const targetIndex = opposingGroup.findIndex(c => c.id === target.id);
+        const attackModifier = getCardModifiers(currentChar, 'attack');
+        const damageModifier = getCardModifiers(currentChar, 'damage');
+        
+        const attackResult = simulateAttack(
+          currentChar,
+          opposingGroup[targetIndex],
+          attackModifier,
+          damageModifier
+        );
+        
+        currentGroup[currentCharIndex] = attackResult.attacker;
+        opposingGroup[targetIndex] = attackResult.defender;
+        combatLogs.push(...attackResult.log);
+      }
+    } else {
+      // Defend
+      const defendResult = simulateDefend(currentChar);
+      currentGroup[currentCharIndex] = defendResult.character;
+      combatLogs.push(...defendResult.log);
+    }
+    
+    // Check if war is over after each action
+    if (isWarOver(updatedGroup1, updatedGroup2)) {
+      break;
+    }
+  }
+  
+  // Process turn end effects for all characters
+  updatedGroup1 = updatedGroup1.map(processTurnEnd);
+  updatedGroup2 = updatedGroup2.map(processTurnEnd);
+  
+  const warComplete = isWarOver(updatedGroup1, updatedGroup2);
+  let winner: string | null = null;
+  
+  if (warComplete) {
+    const group1HasSurvivors = updatedGroup1.some(c => c.isAlive);
+    const group2HasSurvivors = updatedGroup2.some(c => c.isAlive);
+    
+    if (group1HasSurvivors && !group2HasSurvivors) {
+      winner = "Group 1";
+    } else if (group2HasSurvivors && !group1HasSurvivors) {
+      winner = "Group 2";
+    } else {
+      winner = "Draw";
+    }
+  }
+  
+  return {
+    group1: updatedGroup1,
+    group2: updatedGroup2,
+    logs: combatLogs,
+    isComplete: warComplete,
+    winner
+  };
+};

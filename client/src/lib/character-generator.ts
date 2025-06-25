@@ -61,9 +61,12 @@ export const generateProfile = (): Character => {
     maxHp: baseHp,
     con,
     armor: CLASS_ARMOR[classId],
+    tempArmor: 0,
     cards: [card1, card2],
     usedCards: [],
     initiative,
+    activeEffects: [],
+    isAlive: true,
   };
 };
 
@@ -74,7 +77,8 @@ export const updateCharacterClass = (character: Character, newClass: number): Ch
     class: newClass,
     maxHp: newHp,
     hp: newHp,
-    armor: CLASS_ARMOR[newClass as keyof typeof CLASS_ARMOR]
+    armor: CLASS_ARMOR[newClass as keyof typeof CLASS_ARMOR],
+    isAlive: newHp > 0,
   };
 };
 
@@ -84,6 +88,7 @@ export const updateCharacterCon = (character: Character, newCon: number): Charac
     ...character,
     con: newCon,
     maxHp: newHp,
-    hp: newHp
+    hp: newHp,
+    isAlive: newHp > 0,
   };
 };

@@ -5,6 +5,7 @@ import { CharacterCard } from '@/components/character-card';
 import { GroupSidebar } from '@/components/group-sidebar';
 import { ControlPanel } from '@/components/control-panel';
 import { CardEffectsReference } from '@/components/card-effects-reference';
+import { WarSystem } from '@/components/war-system';
 
 export default function BoardingPage() {
   const [groups, setGroups] = useState<Record<string, Character[]>>({});
@@ -21,11 +22,29 @@ export default function BoardingPage() {
     setActiveGroup(groupId);
   };
 
+  // Migration helper to ensure all characters have new properties
+  const migrateCharacter = (character: Character): Character => {
+    return {
+      ...character,
+      tempArmor: character.tempArmor ?? 0,
+      activeEffects: character.activeEffects ?? [],
+      isAlive: character.isAlive ?? (character.hp > 0),
+    };
+  };
+
+  // Migrate existing groups on load
+  const migratedGroups = Object.fromEntries(
+    Object.entries(groups).map(([groupId, characters]) => [
+      groupId,
+      characters.map(migrateCharacter)
+    ])
+  );
+
   const updateProfile = (profileId: string, updatedData: Character) => {
     if (!activeGroup) return;
     
-    const updatedGroup = groups[activeGroup].map(p =>
-      p.id === profileId ? updatedData : p
+    const updatedGroup = migratedGroups[activeGroup].map(p =>
+      p.id === profileId ? migrateCharacter(updatedData) : p
     );
     setGroups({ ...groups, [activeGroup]: updatedGroup });
   };
@@ -63,10 +82,28 @@ export default function BoardingPage() {
     }
   };
 
+  const renameGroup = (oldName: string, newName: string) => {
+    if (newName === oldName || groups[newName]) return;
+    
+    const newGroups = { ...groups };
+    newGroups[newName] = newGroups[oldName];
+    delete newGroups[oldName];
+    
+    setGroups(newGroups);
+    if (activeGroup === oldName) {
+      setActiveGroup(newName);
+    }
+  };
+
   const resetAllCards = () => {
     const newGroups: Record<string, Character[]> = {};
-    for (const group in groups) {
-      newGroups[group] = groups[group].map(p => ({ ...p, usedCards: [] }));
+    for (const group in migratedGroups) {
+      newGroups[group] = migratedGroups[group].map(p => ({ 
+        ...migrateCharacter(p), 
+        usedCards: [],
+        activeEffects: [],
+        tempArmor: 0,
+      }));
     }
     setGroups(newGroups);
   };
@@ -93,17 +130,18 @@ export default function BoardingPage() {
       <div className="flex gap-6">
         {/* Group Sidebar */}
         <GroupSidebar
-          groups={groups}
+          groups={migratedGroups}
           activeGroup={activeGroup}
           onGroupSelect={setActiveGroup}
           onGroupDelete={deleteGroup}
+          onGroupRename={renameGroup}
         />
 
         {/* Character Profiles Grid */}
         <div className="flex-1">
-          {activeGroup && groups[activeGroup] && (
+          {activeGroup && migratedGroups[activeGroup] && (
             <div className="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-6">
-              {groups[activeGroup].map(character => (
+              {migratedGroups[activeGroup].map(character => (
                 <CharacterCard
                   key={character.id}
                   character={character}
@@ -113,7 +151,7 @@ export default function BoardingPage() {
             </div>
           )}
 
-          {(!activeGroup || !groups[activeGroup]) && (
+          {(!activeGroup || !migratedGroups[activeGroup]) && (
             <div className="text-center text-gray-400 mt-12">
               <h2 className="text-2xl mb-4">NO ACTIVE GROUP</h2>
               <p>Generate characters to get started</p>
@@ -124,6 +162,12 @@ export default function BoardingPage() {
           <CardEffectsReference />
         </div>
       </div>
+      
+      {/* WAR System */}
+      <WarSystem 
+        groups={migratedGroups} 
+        onUpdateGroups={setGroups}
+      />
     </div>
   );
 }
