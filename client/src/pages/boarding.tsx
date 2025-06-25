@@ -1,5 +1,5 @@
-import { useState } from 'react';
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { useState, useEffect } from 'react';
+import { useMutation } from '@tanstack/react-query';
 import type { Character, Scenario } from '@shared/schema';
 import { generateProfile } from '@/lib/character-generator';
 import { CharacterCard } from '@/components/character-card';
@@ -13,14 +13,27 @@ export default function BoardingPage() {
   const [groups, setGroups] = useState<Record<string, Character[]>>({});
   const [activeGroup, setActiveGroup] = useState<string | null>(null);
   const [currentScenarioId, setCurrentScenarioId] = useState<number | null>(null);
-  const queryClient = useQueryClient();
+  const [scenarios, setScenarios] = useState<Scenario[]>([]);
+  const [isLoading, setIsLoading] = useState(false);
   const { toast } = useToast();
 
-  // Fetch scenarios from database
-  const { data: scenarios = [], isLoading } = useQuery({
-    queryKey: ['/api/scenarios'],
-    queryFn: () => apiRequest<Scenario[]>({ endpoint: '/api/scenarios' }),
-  });
+  // Load scenarios only once when component mounts
+  const loadScenariosFromDb = async () => {
+    try {
+      setIsLoading(true);
+      const data = await apiRequest<Scenario[]>({ endpoint: '/api/scenarios' });
+      setScenarios(data);
+    } catch (error) {
+      console.error('Failed to load scenarios:', error);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  // Load scenarios on component mount
+  useEffect(() => {
+    loadScenariosFromDb();
+  }, []);
 
   // Create scenario mutation
   const createScenarioMutation = useMutation({
@@ -31,7 +44,7 @@ export default function BoardingPage() {
         body: data,
       }),
     onSuccess: (newScenario) => {
-      queryClient.invalidateQueries({ queryKey: ['/api/scenarios'] });
+      setScenarios(prev => [...prev, newScenario]);
       setCurrentScenarioId(newScenario.id);
       toast({
         title: "Success",
@@ -55,8 +68,8 @@ export default function BoardingPage() {
         method: 'PUT',
         body: data,
       }),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['/api/scenarios'] });
+    onSuccess: (updatedScenario) => {
+      setScenarios(prev => prev.map(s => s.id === updatedScenario.id ? updatedScenario : s));
       toast({
         title: "Success",
         description: "Scenario updated",
@@ -111,7 +124,10 @@ export default function BoardingPage() {
     }
   };
 
-  const loadScenario = () => {
+  const loadScenario = async () => {
+    // Refresh scenarios first
+    await loadScenariosFromDb();
+    
     if (scenarios.length === 0) {
       toast({
         title: "No scenarios",
