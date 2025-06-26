@@ -184,7 +184,13 @@ export function CharacterCard({ character, onUpdate }: CharacterCardProps) {
                   min="0"
                 />
                 <span className="text-gray-500">/</span>
-                <span className="text-white font-mono">{character.maxArmorPlates}</span>
+                <Input
+                  type="number"
+                  value={character.maxArmorPlates}
+                  onChange={(e) => handleUpdate({ maxArmorPlates: Math.max(0, parseInt(e.target.value) || 0) })}
+                  className="w-16 h-6 text-xs text-center bg-gray-800 border-gray-600"
+                  min="0"
+                />
               </div>
               {character.tempArmorPlates && character.tempArmorPlates > 0 && (
                 <Badge variant="secondary" className="text-xs">
@@ -219,12 +225,19 @@ export function CharacterCard({ character, onUpdate }: CharacterCardProps) {
                 <Input
                   type="number"
                   value={character.bulletTokens}
-                  onChange={(e) => handleUpdate({ bulletTokens: Math.max(0, Math.min(4, parseInt(e.target.value) || 0)) })}
+                  onChange={(e) => handleUpdate({ bulletTokens: Math.max(0, Math.min(character.maxBulletTokens || 4, parseInt(e.target.value) || 0)) })}
                   className="w-16 h-6 text-xs text-center bg-gray-800 border-gray-600"
                   min="0"
-                  max="4"
+                  max={character.maxBulletTokens || 4}
                 />
-                <span className="text-gray-500">/4</span>
+                <span className="text-gray-500">/</span>
+                <Input
+                  type="number"
+                  value={character.maxBulletTokens || 4}
+                  onChange={(e) => handleUpdate({ maxBulletTokens: Math.max(0, parseInt(e.target.value) || 0) })}
+                  className="w-16 h-6 text-xs text-center bg-gray-800 border-gray-600"
+                  min="0"
+                />
               </div>
             </div>
 
@@ -235,28 +248,59 @@ export function CharacterCard({ character, onUpdate }: CharacterCardProps) {
                 <Input
                   type="number"
                   value={character.gunPoints}
-                  onChange={(e) => handleUpdate({ gunPoints: Math.max(0, Math.min(4, parseInt(e.target.value) || 0)) })}
+                  onChange={(e) => handleUpdate({ gunPoints: Math.max(0, Math.min(character.maxGunPoints || 4, parseInt(e.target.value) || 0)) })}
                   className="w-16 h-6 text-xs text-center bg-gray-800 border-gray-600"
                   min="0"
-                  max="4"
+                  max={character.maxGunPoints || 4}
                 />
-                <span className="text-gray-500">/4</span>
+                <span className="text-gray-500">/</span>
+                <Input
+                  type="number"
+                  value={character.maxGunPoints || 4}
+                  onChange={(e) => handleUpdate({ maxGunPoints: Math.max(0, parseInt(e.target.value) || 0) })}
+                  className="w-16 h-6 text-xs text-center bg-gray-800 border-gray-600"
+                  min="0"
+                />
               </div>
               {/* Gun Points Health Bar */}
               <div className="w-full bg-gray-700 h-2 rounded relative overflow-hidden">
                 <div 
                   className="h-full transition-all duration-300 bg-red-500"
-                  style={{ width: `${(character.gunPoints / 4) * 100}%` }}
+                  style={{ width: `${(character.gunPoints / (character.maxGunPoints || 4)) * 100}%` }}
                 />
                 <div className="absolute inset-0 flex items-center justify-center">
                   <span className="text-xs font-bold text-white drop-shadow">
-                    {character.gunPoints}/4
+                    {character.gunPoints}/{character.maxGunPoints || 4}
                   </span>
                 </div>
               </div>
             </div>
           </div>
         )}
+
+        {/* Damage Dice Section */}
+        <div className="grid grid-cols-2 gap-4 mb-4">
+          <div>
+            <label className="text-xs text-gray-400 uppercase block mb-1">MELEE DAMAGE</label>
+            <Input
+              type="text"
+              value={character.meleeDamageDice || '1d6'}
+              onChange={(e) => handleUpdate({ meleeDamageDice: e.target.value })}
+              className="w-full h-6 text-xs text-center bg-gray-800 border-gray-600"
+              placeholder="1d6"
+            />
+          </div>
+          <div>
+            <label className="text-xs text-gray-400 uppercase block mb-1">RANGED DAMAGE</label>
+            <Input
+              type="text"
+              value={character.rangedDamageDice || '1d4'}
+              onChange={(e) => handleUpdate({ rangedDamageDice: e.target.value })}
+              className="w-full h-6 text-xs text-center bg-gray-800 border-gray-600"
+              placeholder="1d4"
+            />
+          </div>
+        </div>
 
         {/* Cards Section */}
         <div>

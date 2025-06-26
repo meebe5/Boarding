@@ -37,14 +37,18 @@ export const characterSchema = z.object({
   armorPlates: z.number().min(0).default(0), // Current armor plates
   maxArmorPlates: z.number().min(0).default(0), // Base armor plates for class
   tempArmorPlates: z.number().min(0).default(0),
-  bulletTokens: z.number().min(0).max(4).default(4),
-  gunPoints: z.number().min(0).max(4).default(4), // Gun health
+  bulletTokens: z.number().min(0).default(4),
+  maxBulletTokens: z.number().min(0).default(4), // Editable max bullets
+  gunPoints: z.number().min(0).default(4), // Gun health
+  maxGunPoints: z.number().min(0).default(4), // Editable max gun points
   junkTokens: z.number().min(0).default(0),
   hasRangedWeapon: z.boolean().default(false),
   cards: z.array(z.number().min(1).max(15)).default([]), // Empty by default, cards drawn each turn
   activeEffects: z.array(activeEffectSchema).default([]),
   isAlive: z.boolean().default(true),
   lastDamageType: z.enum(['melee', 'ranged', 'none']).default('none'),
+  meleeDamageDice: z.string().default('1d6'), // Editable melee damage dice
+  rangedDamageDice: z.string().default('1d4'), // Editable ranged damage dice
 });
 
 export const groupSchema = z.object({

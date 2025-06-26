@@ -305,8 +305,8 @@ export const performMeleeAttack = (
   // Resolve damage
   if (attackRoll >= effectiveArmor) {
     // Full damage to HP using custom damage dice
-    let damage = rollDice(attacker.meleeDamageDice);
-    logs.push(`Damage roll (${attacker.meleeDamageDice}): ${damage}`);
+    let damage = rollDice(attacker.meleeDamageDice || '1d6');
+    logs.push(`Damage roll (${attacker.meleeDamageDice || '1d6'}): ${damage}`);
     
     // Apply damage
     if (updatedDefender.tempHp > 0) {
@@ -418,8 +418,8 @@ export const performReload = (character: Character): { character: Character; log
   let updatedCharacter = { ...character };
   
   // Reload to max bullets
-  updatedCharacter.bulletTokens = updatedCharacter.maxBulletTokens;
-  logs.push(`${character.name} reloads ${updatedCharacter.maxBulletTokens} bullets`);
+  updatedCharacter.bulletTokens = updatedCharacter.maxBulletTokens || 4;
+  logs.push(`${character.name} reloads ${updatedCharacter.maxBulletTokens || 4} bullets`);
   
   // Roll gun damage (unless Engineer with good roll)
   let gunDamage = rollD4();
@@ -478,7 +478,7 @@ export const performRepair = (
     updatedCharacter.armorPlates += actualRepair;
     logs.push(`${character.name} repairs ${actualRepair} armor plates using ${junkTokensUsed} junk tokens`);
   } else if (target === 'GUN') {
-    const maxRepair = updatedCharacter.maxGunPoints - updatedCharacter.gunPoints;
+    const maxRepair = (updatedCharacter.maxGunPoints || 4) - updatedCharacter.gunPoints;
     const actualRepair = Math.min(repairAmount, maxRepair);
     updatedCharacter.gunPoints += actualRepair;
     

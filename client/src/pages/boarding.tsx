@@ -31,13 +31,17 @@ export default function BoardingPage() {
       maxArmorPlates: character.maxArmorPlates ?? (character as any).armor ?? 2,
       tempArmorPlates: character.tempArmorPlates ?? 0,
       bulletTokens: character.bulletTokens ?? (character.hasRangedWeapon ? 4 : 0),
+      maxBulletTokens: (character as any).maxBulletTokens ?? 4,
       gunPoints: character.gunPoints ?? (character.hasRangedWeapon ? 4 : 0),
+      maxGunPoints: (character as any).maxGunPoints ?? 4,
       junkTokens: character.junkTokens ?? 0,
       hasRangedWeapon: character.hasRangedWeapon ?? (character.class <= 3),
       activeEffects: character.activeEffects ?? [],
       isAlive: character.isAlive ?? (character.hp > 0),
       lastDamageType: character.lastDamageType ?? 'none',
       cards: character.cards ?? [],
+      meleeDamageDice: (character as any).meleeDamageDice ?? '1d6',
+      rangedDamageDice: (character as any).rangedDamageDice ?? '1d4',
     };
   };
 
