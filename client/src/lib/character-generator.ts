@@ -1,27 +1,27 @@
 import { v4 as uuidv4 } from 'uuid';
 import type { Character } from '@shared/schema';
 
-// New card effects mapping
+// Card effects mapping with exact specifications
 export const CARD_EFFECTS = {
   // RANGED CARDS (1-5)
   1: "[Careful Shot] Your next ranged attack ignores 1 Armor",
-  2: "[Volley] Roll your attack twice, choose the higher. Costs 2 Bullet Tokens",
-  3: "[Snap Fire] One additional Attack immediately, but roll -1 damage (min 1)",
+  2: "[Volley] Roll your attack twice, choose the higher number. Costs 2 Bullet Tokens",
+  3: "[Snap Fire] Attack twice, but roll -2 damage for the first attack (min 1). Costs 2 Bullet Tokens",
   4: "[Take Aim] +1 to your next ranged attack roll",
-  5: "[Ricochet] If your attack damages armor, it deals 1 HP to enemy",
+  5: "[Ricochet] If your attack damages armor, it also deals 1 HP to enemy",
   
   // MELEE CARDS (6-10)
   6: "[Patience] If you use the [DEFEND] action this turn, you gain an additional +2 [ARMOR PLATES] temporarily",
   7: "[Feint] Your next melee attack ignores 1 Armor",
   8: "[Overhead Strike] +2 ATTACK an enemy, but if you hit their [ARMOR PLATES], you take 1 self-damage",
-  9: "[Deadly Slice] If you Damage a profiles HP, they receive -1 ATTACK on their next Action",
+  9: "[Deadly Slice] If you Damage a profiles HP, they recieve -1 ATTACK on their next Action",
   10: "[Parry] Until your next turn, reduce all melee damage taken by 1",
   
   // UTILITY CARDS (11-15)
-  11: "[Junk Material] Gain 1 Junk Material (used for gun or armor repair)",
+  11: "[Junk Material] Gain 1 Junk Matieral (used for gun or armor repair)",
   12: "[Triage] Restore 2 HP to yourself or adjacent ally",
   13: "[Scrap Scan] Pick one: Find 1 Junk item, OR Reveal armor value of one visible enemy",
-  14: "[Retaliation] 2 HP damage to the [Profile] that attacks you, lasts until the beginning of your next turn",
+  14: "[Retailiation] 2 HP damage to the [Profile] that attacks you, lasts until the beginning of your next turn",
   15: "[Juicing] Give an Ally or yourself +2 Temporary Hitpoints, that lasts until the start of your next turn"
 };
 
