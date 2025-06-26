@@ -175,7 +175,14 @@ export function WarSystem({ groups, onUpdateGroups }: WarSystemProps) {
     isGroup1: boolean,
     logs: string[]
   ): Promise<{ currentGroup: Character[]; opposingGroup: Character[]; logs: string[] }> => {
-    if (!character.isAlive || character.hp <= 0) return { currentGroup, opposingGroup, logs };
+    // Ensure character with 0 HP is marked as dead
+    if (character.hp <= 0) {
+      character.hp = 0;
+      character.isAlive = false;
+      return { currentGroup, opposingGroup, logs };
+    }
+    
+    if (!character.isAlive) return { currentGroup, opposingGroup, logs };
 
     let currentChar = character;
     let updatedCurrentGroup = [...currentGroup];
@@ -365,13 +372,27 @@ export function WarSystem({ groups, onUpdateGroups }: WarSystemProps) {
   };
 
   const endWar = (group1: Character[], group2: Character[], group1Name: string, group2Name: string) => {
+    // Ensure HP 0 characters are marked as dead
+    group1.forEach(char => {
+      if (char.hp <= 0) {
+        char.hp = 0;
+        char.isAlive = false;
+      }
+    });
+    group2.forEach(char => {
+      if (char.hp <= 0) {
+        char.hp = 0;
+        char.isAlive = false;
+      }
+    });
+
     const group1Alive = group1.filter(c => c.isAlive && c.hp > 0).length;
     const group2Alive = group2.filter(c => c.isAlive && c.hp > 0).length;
     
     let endLogs: string[] = [];
     endLogs.push(`\n=== FINAL TALLY ===`);
-    endLogs.push(`${group1Name}: ${group1Alive} alive`);
-    endLogs.push(`${group2Name}: ${group2Alive} alive`);
+    endLogs.push(`${group1Name}: ${group1Alive} alive (${group1.filter(c => c.hp <= 0).length} dead)`);
+    endLogs.push(`${group2Name}: ${group2Alive} alive (${group2.filter(c => c.hp <= 0).length} dead)`);
     
     if (group1Alive > group2Alive) {
       endLogs.push(`\n🎉 ${group1Name} WINS! (${group1Alive} survivors vs ${group2Alive})`);
@@ -385,6 +406,9 @@ export function WarSystem({ groups, onUpdateGroups }: WarSystemProps) {
     setIsSimulating(false);
     setIsPaused(false);
     setCurrentWarState(null);
+    
+    // Update groups in parent component
+    onUpdateGroups(groups);
   };
 
   const selectTarget = (attacker: Character, enemies: Character[]): Character | null => {
