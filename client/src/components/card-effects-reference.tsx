@@ -1,4 +1,3 @@
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { CARD_EFFECTS } from "@/lib/character-generator";
 
@@ -33,19 +32,19 @@ export function CardEffectsReference() {
       
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
         {Object.entries(cardsByDeck).map(([deckType, cards]) => (
-          <Card key={deckType} className={`${deckStyles[deckType as keyof typeof deckStyles]} border-2`}>
-            <CardHeader className="text-center">
-              <CardTitle className="text-xl font-bold flex items-center justify-center gap-2">
+          <div key={deckType} className={`${deckStyles[deckType as keyof typeof deckStyles]} border-2 rounded-lg shadow-lg overflow-hidden`}>
+            <div className="text-center p-6 border-b">
+              <div className="text-xl font-bold flex items-center justify-center gap-2 mb-2">
                 <span className="text-2xl">{deckIcons[deckType as keyof typeof deckIcons]}</span>
                 {deckType} DECK
-              </CardTitle>
-              <CardDescription className="text-gray-600 dark:text-gray-300">
+              </div>
+              <div className="text-gray-600 dark:text-gray-300 text-sm">
                 {deckType === 'MELEE' && 'Close combat and aggressive tactics'}
                 {deckType === 'RANGED' && 'Shooting and precision attacks'}
                 {deckType === 'SUPPORT' && 'Healing, repair, and assistance'}
-              </CardDescription>
-            </CardHeader>
-            <CardContent>
+              </div>
+            </div>
+            <div className="p-6">
               <div className="space-y-3">
                 {cards.map((card) => (
                   <div key={card.id} className="bg-white dark:bg-gray-800 rounded-lg p-3 border shadow-sm">
@@ -66,8 +65,8 @@ export function CardEffectsReference() {
                   </div>
                 ))}
               </div>
-            </CardContent>
-          </Card>
+            </div>
+          </div>
         ))}
       </div>
     </div>

@@ -78,7 +78,12 @@ export function CharacterCard({ character, onUpdate }: CharacterCardProps) {
                     </TooltipTrigger>
                     <TooltipContent>
                       <p className="text-sm">
-                        {CARD_EFFECTS[effect.cardId as keyof typeof CARD_EFFECTS] || 'Effect not found'}
+                        {(() => {
+                          const cardEffect = CARD_EFFECTS[effect.cardId as keyof typeof CARD_EFFECTS];
+                          if (!cardEffect) return 'Effect not found';
+                          return typeof cardEffect === 'string' ? cardEffect : 
+                                 (cardEffect.description || cardEffect.name || 'Unknown Effect');
+                        })()}
                       </p>
                       <p className="text-xs text-gray-400">
                         From: {effect.sourceProfileName} ({effect.turnsRemaining} turns left)
@@ -279,8 +284,13 @@ export function CharacterCard({ character, onUpdate }: CharacterCardProps) {
                             {(() => {
                               const effect = CARD_EFFECTS[cardId as keyof typeof CARD_EFFECTS];
                               if (!effect) return `Card ${cardId} - Effect Missing`;
-                              const bracketMatch = effect.match(/\[(.*?)\]/);
-                              return bracketMatch ? bracketMatch[0] : effect.substring(0, 20) + '...';
+                              
+                              // Handle case where effect might be an object instead of string
+                              const effectText = typeof effect === 'string' ? effect : 
+                                                (effect.description || effect.name || 'Unknown Effect');
+                              
+                              const bracketMatch = effectText.match(/\[(.*?)\]/);
+                              return bracketMatch ? bracketMatch[0] : effectText.substring(0, 20) + '...';
                             })()}
                           </div>
                         </div>
@@ -298,7 +308,12 @@ export function CharacterCard({ character, onUpdate }: CharacterCardProps) {
                   <TooltipContent>
                     <p className="max-w-xs">
                       <strong>Card {cardId}:</strong><br />
-                      {CARD_EFFECTS[cardId as keyof typeof CARD_EFFECTS]}
+                      {(() => {
+                        const effect = CARD_EFFECTS[cardId as keyof typeof CARD_EFFECTS];
+                        if (!effect) return 'Effect not found';
+                        return typeof effect === 'string' ? effect : 
+                               (effect.description || effect.name || 'Unknown Effect');
+                      })()}
                     </p>
                   </TooltipContent>
                 </Tooltip>
