@@ -6,7 +6,7 @@ export const CARD_EFFECTS = {
   // RANGED CARDS (1-5)
   1: "[Careful Shot] Your next ranged attack ignores 1 Armor",
   2: "[Volley] Roll your attack twice, choose the higher. Costs 2 Bullet Tokens",
-  3: "[Snap Fire] Make TWO attacks immediately. Costs 2 Bullet Tokens",
+  3: "[Snap Fire] Uses 2 BULLET POINTS. Make an additional attack with -2 ATTACK",
   4: "[Take Aim] +1 to your next ranged attack roll",
   5: "[Ricochet] If you cause an enemy to lose 1 AP [ARMOR PLATE], they lose 1 HP as well",
   

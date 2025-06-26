@@ -4,6 +4,25 @@ import { CARD_EFFECTS, drawCards, getCardDeck, CLASS_ROLE_TYPE } from './charact
 // Dice rolling functions
 export const rollD4 = (): number => Math.floor(Math.random() * 4) + 1;
 export const rollD6 = (): number => Math.floor(Math.random() * 6) + 1;
+export const rollD8 = (): number => Math.floor(Math.random() * 8) + 1;
+export const rollD10 = (): number => Math.floor(Math.random() * 10) + 1;
+export const rollD12 = (): number => Math.floor(Math.random() * 12) + 1;
+export const rollD20 = (): number => Math.floor(Math.random() * 20) + 1;
+
+// Parse and roll dice notation (e.g., "1d6", "2d4")
+export const rollDice = (diceNotation: string): number => {
+  const match = diceNotation.match(/^(\d+)d(\d+)$/);
+  if (!match) return 1; // Default to 1 if invalid notation
+  
+  const count = parseInt(match[1]);
+  const sides = parseInt(match[2]);
+  
+  let total = 0;
+  for (let i = 0; i < count; i++) {
+    total += Math.floor(Math.random() * sides) + 1;
+  }
+  return total;
+};
 
 // Combat actions
 export type CombatAction = 'ATTACK_MELEE' | 'ATTACK_RANGED' | 'DEFEND' | 'RELOAD' | 'REPAIR' | 'CREATE';
@@ -285,14 +304,9 @@ export const performMeleeAttack = (
   
   // Resolve damage
   if (attackRoll >= effectiveArmor) {
-    // Full damage to HP
-    let damage = attackRoll;
-    
-    // Snap Fire penalty
-    if (attacker.activeEffects.some(e => e.cardId === 3)) {
-      damage = Math.max(1, damage - 1);
-      logs.push(`Snap Fire reduces damage by 1 (minimum 1)`);
-    }
+    // Full damage to HP using custom damage dice
+    let damage = rollDice(attacker.meleeDamageDice);
+    logs.push(`Damage roll (${attacker.meleeDamageDice}): ${damage}`);
     
     // Apply damage
     if (updatedDefender.tempHp > 0) {
@@ -403,9 +417,9 @@ export const performReload = (character: Character): { character: Character; log
   
   let updatedCharacter = { ...character };
   
-  // Reload 4 bullets
-  updatedCharacter.bulletTokens = 4;
-  logs.push(`${character.name} reloads 4 bullets`);
+  // Reload to max bullets
+  updatedCharacter.bulletTokens = updatedCharacter.maxBulletTokens;
+  logs.push(`${character.name} reloads ${updatedCharacter.maxBulletTokens} bullets`);
   
   // Roll gun damage (unless Engineer with good roll)
   let gunDamage = rollD4();
@@ -464,7 +478,7 @@ export const performRepair = (
     updatedCharacter.armorPlates += actualRepair;
     logs.push(`${character.name} repairs ${actualRepair} armor plates using ${junkTokensUsed} junk tokens`);
   } else if (target === 'GUN') {
-    const maxRepair = 4 - updatedCharacter.gunPoints;
+    const maxRepair = updatedCharacter.maxGunPoints - updatedCharacter.gunPoints;
     const actualRepair = Math.min(repairAmount, maxRepair);
     updatedCharacter.gunPoints += actualRepair;
     
