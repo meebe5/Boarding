@@ -372,34 +372,20 @@ export function WarSystem({ groups, onUpdateGroups }: WarSystemProps) {
   };
 
   const endWar = (group1: Character[], group2: Character[], group1Name: string, group2Name: string) => {
-    // Ensure HP 0 characters are marked as dead
-    group1.forEach(char => {
-      if (char.hp <= 0) {
-        char.hp = 0;
-        char.isAlive = false;
-      }
-    });
-    group2.forEach(char => {
-      if (char.hp <= 0) {
-        char.hp = 0;
-        char.isAlive = false;
-      }
-    });
-
-    const group1Alive = group1.filter(c => c.isAlive && c.hp > 0).length;
-    const group2Alive = group2.filter(c => c.isAlive && c.hp > 0).length;
+    const group1TotalHP = group1.filter(c => c.isAlive).reduce((sum, char) => sum + Math.max(0, char.hp), 0);
+    const group2TotalHP = group2.filter(c => c.isAlive).reduce((sum, char) => sum + Math.max(0, char.hp), 0);
     
     let endLogs: string[] = [];
     endLogs.push(`\n=== FINAL TALLY ===`);
-    endLogs.push(`${group1Name}: ${group1Alive} alive (${group1.filter(c => c.hp <= 0).length} dead)`);
-    endLogs.push(`${group2Name}: ${group2Alive} alive (${group2.filter(c => c.hp <= 0).length} dead)`);
+    endLogs.push(`${group1Name}: ${group1TotalHP} total HP remaining`);
+    endLogs.push(`${group2Name}: ${group2TotalHP} total HP remaining`);
     
-    if (group1Alive > group2Alive) {
-      endLogs.push(`\n🎉 ${group1Name} WINS! (${group1Alive} survivors vs ${group2Alive})`);
-    } else if (group2Alive > group1Alive) {
-      endLogs.push(`\n🎉 ${group2Name} WINS! (${group2Alive} survivors vs ${group1Alive})`);
+    if (group1TotalHP > group2TotalHP) {
+      endLogs.push(`\n🎉 ${group1Name} WINS! (${group1TotalHP} HP vs ${group2TotalHP} HP)`);
+    } else if (group2TotalHP > group1TotalHP) {
+      endLogs.push(`\n🎉 ${group2Name} WINS! (${group2TotalHP} HP vs ${group1TotalHP} HP)`);
     } else {
-      endLogs.push(`\n⚖️ DRAW! Both groups have ${group1Alive} survivors`);
+      endLogs.push(`\n⚖️ DRAW! Both groups eliminated`);
     }
 
     setCombatLog(prev => [...prev, ...endLogs]);
@@ -408,7 +394,11 @@ export function WarSystem({ groups, onUpdateGroups }: WarSystemProps) {
     setCurrentWarState(null);
     
     // Update groups in parent component
-    onUpdateGroups(groups);
+    onUpdateGroups({
+      ...groups,
+      [group1Name]: group1,
+      [group2Name]: group2
+    });
   };
 
   const selectTarget = (attacker: Character, enemies: Character[]): Character | null => {
@@ -433,9 +423,9 @@ export function WarSystem({ groups, onUpdateGroups }: WarSystemProps) {
   };
 
   const isWarActive = (group1: Character[], group2: Character[]): boolean => {
-    const group1Alive = group1.filter(c => c.isAlive && c.hp > 0).length;
-    const group2Alive = group2.filter(c => c.isAlive && c.hp > 0).length;
-    return group1Alive > 0 && group2Alive > 0;
+    const group1TotalHP = group1.filter(c => c.isAlive).reduce((sum, char) => sum + Math.max(0, char.hp), 0);
+    const group2TotalHP = group2.filter(c => c.isAlive).reduce((sum, char) => sum + Math.max(0, char.hp), 0);
+    return group1TotalHP > 0 && group2TotalHP > 0;
   };
 
   const resetWar = () => {
@@ -461,10 +451,10 @@ export function WarSystem({ groups, onUpdateGroups }: WarSystemProps) {
             <div key={groupName} className="bg-gray-800 rounded p-3 border border-gray-600">
               <div className="font-bold text-blue-400 mb-2">{groupName}</div>
               <div className="text-xs text-gray-300">
-                {groups[groupName]?.filter(c => c.isAlive && c.hp > 0).length || 0} alive / {groups[groupName]?.length || 0} total
+                Total HP: {groups[groupName]?.filter(c => c.isAlive).reduce((sum, char) => sum + Math.max(0, char.hp), 0) || 0}
               </div>
               <div className="flex flex-wrap gap-1 mt-2">
-                {groups[groupName]?.filter(c => c.isAlive && c.hp > 0).map(char => (
+                {groups[groupName]?.filter(c => c.isAlive).map(char => (
                   <Badge key={char.id} variant="secondary" className="text-xs">
                     {char.name.split(' ')[0]}
                   </Badge>
