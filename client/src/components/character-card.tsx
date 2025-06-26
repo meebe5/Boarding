@@ -78,7 +78,7 @@ export function CharacterCard({ character, onUpdate }: CharacterCardProps) {
                     </TooltipTrigger>
                     <TooltipContent>
                       <p className="text-sm">
-                        {CARD_EFFECTS[effect.cardId as keyof typeof CARD_EFFECTS] || 'Effect not found'}
+                        {CARD_EFFECTS[effect.cardId as keyof typeof CARD_EFFECTS]}
                       </p>
                       <p className="text-xs text-gray-400">
                         From: {effect.sourceProfileName} ({effect.turnsRemaining} turns left)
@@ -276,12 +276,7 @@ export function CharacterCard({ character, onUpdate }: CharacterCardProps) {
                         <div className="flex-1">
                           <div className="font-bold text-blue-400 text-xs">CARD {cardId}</div>
                           <div className="text-gray-400 text-xs mt-1">
-                            {(() => {
-                              const effect = CARD_EFFECTS[cardId as keyof typeof CARD_EFFECTS];
-                              if (!effect) return `Card ${cardId} - Effect Missing`;
-                              const bracketMatch = effect.match(/\[(.*?)\]/);
-                              return bracketMatch ? bracketMatch[0] : effect.substring(0, 20) + '...';
-                            })()}
+                            {CARD_EFFECTS[cardId as keyof typeof CARD_EFFECTS].split(']')[0] + ']'}
                           </div>
                         </div>
                         <Button
@@ -298,7 +293,7 @@ export function CharacterCard({ character, onUpdate }: CharacterCardProps) {
                   <TooltipContent>
                     <p className="max-w-xs">
                       <strong>Card {cardId}:</strong><br />
-                      {CARD_EFFECTS[cardId as keyof typeof CARD_EFFECTS] || 'Card effect not found'}
+                      {CARD_EFFECTS[cardId as keyof typeof CARD_EFFECTS]}
                     </p>
                   </TooltipContent>
                 </Tooltip>
