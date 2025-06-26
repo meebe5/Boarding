@@ -6,9 +6,9 @@ export const CARD_EFFECTS = {
   // RANGED CARDS (1-5)
   1: "[Careful Shot] Your next ranged attack ignores 1 Armor",
   2: "[Volley] Roll your attack twice, choose the higher. Costs 2 Bullet Tokens",
-  3: "[Snap Fire] One additional Attack immediately, but roll -1 damage (min 1)",
+  3: "[Snap Fire] Make TWO attacks immediately. Costs 2 Bullet Tokens",
   4: "[Take Aim] +1 to your next ranged attack roll",
-  5: "[Ricochet] If your attack damages armor, it deals 1 HP to enemy",
+  5: "[Ricochet] If you cause an enemy to lose 1 AP [ARMOR PLATE], they lose 1 HP as well",
   
   // MELEE CARDS (6-10)
   6: "[Patience] If you use the [DEFEND] action this turn, you gain an additional +2 [ARMOR PLATES] temporarily",
