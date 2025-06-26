@@ -1,5 +1,5 @@
 import type { Character, ActiveEffect } from '@shared/schema';
-import { CARD_EFFECTS, drawCards, getCardDeck } from './character-generator';
+import { CARD_EFFECTS, drawCards, getCardDeck, CLASS_ROLE_TYPE } from './character-generator';
 
 // Dice rolling functions
 export const rollD4 = (): number => Math.floor(Math.random() * 4) + 1;
@@ -29,11 +29,7 @@ export const startTurn = (character: Character): { character: Character; log: st
     activeEffects,
   };
   
-  // Draw 2 cards
-  const drawnCards = drawCards('MIXED');
-  updatedCharacter.cards = drawnCards;
-  
-  logs.push(`${character.name} draws 2 cards: Card ${drawnCards[0]} and Card ${drawnCards[1]}`);
+  // Note: Card drawing is now handled by the war system based on class
   
   return { character: updatedCharacter, log: logs };
 };

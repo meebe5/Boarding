@@ -39,9 +39,18 @@ export const CLASS_ROLES = {
   1: "Ranged Damage",
   2: "Ranged Utility", 
   3: "Ranged Support",
-  4: "Melee Support",
+  4: "Support",
   5: "Melee Damage",
   6: "Melee Utility"
+};
+
+export const CLASS_ROLE_TYPE = {
+  1: "RANGED",  // Shooter
+  2: "RANGED",  // Engineer
+  3: "RANGED",  // Scavenger
+  4: "SUPPORT", // Tinkerer
+  5: "MELEE",   // Brute
+  6: "MELEE"    // Breaker
 };
 
 // Base HP for each class
@@ -54,14 +63,14 @@ const CLASS_BASE_HP = {
   6: 10  // Breaker
 };
 
-// Base Armor Plates for each class
+// Base Armor Plates by role
 const CLASS_BASE_ARMOR = {
-  1: 2,  // Shooter
-  2: 1,  // Engineer
-  3: 2,  // Scavenger
-  4: 3,  // Tinkerer
-  5: 3,  // Brute
-  6: 2   // Breaker
+  1: 4,  // Shooter (Ranged)
+  2: 4,  // Engineer (Ranged)
+  3: 4,  // Scavenger (Ranged)
+  4: 3,  // Tinkerer (Support)
+  5: 6,  // Brute (Melee)
+  6: 6   // Breaker (Melee)
 };
 
 // Which classes have ranged weapons by default
@@ -134,10 +143,10 @@ export const updateCharacterClass = (character: Character, newClass: number): Ch
 export const CARD_DECKS = {
   RANGED: [1, 2, 3, 4, 5],
   MELEE: [6, 7, 8, 9, 10],
-  UTILITY: [11, 12, 13, 14, 15]
+  SUPPORT: [11, 12, 13, 14, 15] // Renamed from UTILITY
 };
 
-export const drawCards = (deckPreference?: 'RANGED' | 'MELEE' | 'UTILITY' | 'MIXED'): number[] => {
+export const drawCards = (deckPreference?: 'RANGED' | 'MELEE' | 'SUPPORT' | 'MIXED'): number[] => {
   const allCards = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15];
   
   if (deckPreference && deckPreference !== 'MIXED') {
@@ -152,10 +161,15 @@ export const drawCards = (deckPreference?: 'RANGED' | 'MELEE' | 'UTILITY' | 'MIX
   return [shuffled[0], shuffled[1]];
 };
 
-export const getCardDeck = (cardId: number): 'RANGED' | 'MELEE' | 'UTILITY' => {
+export const drawCardsForClass = (characterClass: number): number[] => {
+  const roleType = CLASS_ROLE_TYPE[characterClass as keyof typeof CLASS_ROLE_TYPE];
+  return drawCards(roleType as 'RANGED' | 'MELEE' | 'SUPPORT');
+};
+
+export const getCardDeck = (cardId: number): 'RANGED' | 'MELEE' | 'SUPPORT' => {
   if (cardId >= 1 && cardId <= 5) return 'RANGED';
   if (cardId >= 6 && cardId <= 10) return 'MELEE';
-  return 'UTILITY';
+  return 'SUPPORT';
 };
 
 // Create blank profile for manual creation

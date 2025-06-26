@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import type { Character } from '@shared/schema';
-import { CARD_EFFECTS, CLASS_NAMES, CLASS_ROLES, updateCharacterClass, drawCards } from '@/lib/character-generator';
+import { CARD_EFFECTS, CLASS_NAMES, CLASS_ROLES, CLASS_ROLE_TYPE, updateCharacterClass, drawCards } from '@/lib/character-generator';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -109,6 +109,9 @@ export function CharacterCard({ character, onUpdate }: CharacterCardProps) {
             </select>
             <div className="text-xs text-blue-400 mt-1">
               {CLASS_NAMES[character.class as keyof typeof CLASS_NAMES]} - {CLASS_ROLES[character.class as keyof typeof CLASS_ROLES]}
+            </div>
+            <div className="text-xs text-purple-400 mt-1">
+              Draws from: {CLASS_ROLE_TYPE[character.class as keyof typeof CLASS_ROLE_TYPE]} deck
             </div>
           </div>
 
@@ -222,7 +225,7 @@ export function CharacterCard({ character, onUpdate }: CharacterCardProps) {
 
             <div>
               <label className="text-xs text-gray-400 uppercase block mb-1">GUN POINTS</label>
-              <div className="flex gap-1 items-center">
+              <div className="flex gap-1 items-center mb-1">
                 <span className="text-red-500 text-lg">🔫</span>
                 <Input
                   type="number"
@@ -233,6 +236,18 @@ export function CharacterCard({ character, onUpdate }: CharacterCardProps) {
                   max="4"
                 />
                 <span className="text-gray-500">/4</span>
+              </div>
+              {/* Gun Points Health Bar */}
+              <div className="w-full bg-gray-700 h-2 rounded relative overflow-hidden">
+                <div 
+                  className="h-full transition-all duration-300 bg-red-500"
+                  style={{ width: `${(character.gunPoints / 4) * 100}%` }}
+                />
+                <div className="absolute inset-0 flex items-center justify-center">
+                  <span className="text-xs font-bold text-white drop-shadow">
+                    {character.gunPoints}/4
+                  </span>
+                </div>
               </div>
             </div>
           </div>

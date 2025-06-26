@@ -5,6 +5,7 @@ import { CharacterCard } from '@/components/character-card';
 import { GroupSidebar } from '@/components/group-sidebar';
 import { ControlPanel } from '@/components/control-panel';
 import { CardEffectsReference } from '@/components/card-effects-reference';
+import { WarSystem } from '@/components/war-system';
 
 export default function BoardingPage() {
   const [groups, setGroups] = useState<Record<string, Character[]>>({});
@@ -180,7 +181,11 @@ export default function BoardingPage() {
         </div>
       </div>
       
-      {/* Future: WAR System will be reimplemented with new combat mechanics */}
+      {/* WAR System */}
+      <WarSystem 
+        groups={migratedGroups} 
+        onUpdateGroups={setGroups}
+      />
     </div>
   );
 }
