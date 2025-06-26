@@ -277,12 +277,28 @@ export function WarSystem({ groups, onUpdateGroups }: WarSystemProps) {
           updatedCurrentGroup[charIndex] = attackResult.attacker;
           updatedOpposingGroup[targetIndex] = attackResult.defender;
           roundLogs.push(...attackResult.log);
+          
+          // Check for extra attack from Snap Fire
+          if (attackResult.attacker.tempBonuses?.extraAttack && attackResult.attacker.tempBonuses?.snapFirePenalty) {
+            const secondAttackResult = performRangedAttack(attackResult.attacker, attackResult.defender, true);
+            updatedCurrentGroup[charIndex] = secondAttackResult.attacker;
+            updatedOpposingGroup[targetIndex] = secondAttackResult.defender;
+            roundLogs.push(...secondAttackResult.log);
+          }
         } else {
           // Fallback to melee if ranged unavailable
           const attackResult = performMeleeAttack(currentChar, updatedOpposingGroup[targetIndex]);
           updatedCurrentGroup[charIndex] = attackResult.attacker;
           updatedOpposingGroup[targetIndex] = attackResult.defender;
           roundLogs.push(...attackResult.log);
+          
+          // Check for extra attack from Snap Fire
+          if (attackResult.attacker.tempBonuses?.extraAttack && attackResult.attacker.tempBonuses?.snapFirePenalty) {
+            const secondAttackResult = performMeleeAttack(attackResult.attacker, attackResult.defender, true);
+            updatedCurrentGroup[charIndex] = secondAttackResult.attacker;
+            updatedOpposingGroup[targetIndex] = secondAttackResult.defender;
+            roundLogs.push(...secondAttackResult.log);
+          }
         }
       }
     } else {
@@ -297,11 +313,27 @@ export function WarSystem({ groups, onUpdateGroups }: WarSystemProps) {
             updatedCurrentGroup[charIndex] = attackResult.attacker;
             updatedOpposingGroup[targetIndex] = attackResult.defender;
             roundLogs.push(...attackResult.log);
+            
+            // Check for extra attack from Snap Fire
+            if (attackResult.attacker.tempBonuses?.extraAttack && attackResult.attacker.tempBonuses?.snapFirePenalty) {
+              const secondAttackResult = performRangedAttack(attackResult.attacker, attackResult.defender, true);
+              updatedCurrentGroup[charIndex] = secondAttackResult.attacker;
+              updatedOpposingGroup[targetIndex] = secondAttackResult.defender;
+              roundLogs.push(...secondAttackResult.log);
+            }
           } else {
             const attackResult = performMeleeAttack(currentChar, updatedOpposingGroup[targetIndex]);
             updatedCurrentGroup[charIndex] = attackResult.attacker;
             updatedOpposingGroup[targetIndex] = attackResult.defender;
             roundLogs.push(...attackResult.log);
+            
+            // Check for extra attack from Snap Fire
+            if (attackResult.attacker.tempBonuses?.extraAttack && attackResult.attacker.tempBonuses?.snapFirePenalty) {
+              const secondAttackResult = performMeleeAttack(attackResult.attacker, attackResult.defender, true);
+              updatedCurrentGroup[charIndex] = secondAttackResult.attacker;
+              updatedOpposingGroup[targetIndex] = secondAttackResult.defender;
+              roundLogs.push(...secondAttackResult.log);
+            }
           }
         }
       } else {

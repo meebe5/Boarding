@@ -234,7 +234,8 @@ export const performRangedAttack = (
 // Melee attack
 export const performMeleeAttack = (
   attacker: Character,
-  defender: Character
+  defender: Character,
+  isSecondAttack: boolean = false
 ): { attacker: Character; defender: Character; log: string[] } => {
   const logs: string[] = [];
   
