@@ -89,8 +89,8 @@ export function WarSystem({ groups, onUpdateGroups }: WarSystemProps) {
     });
 
     // Create alternating turn order: Group 1 -> Group 2 -> Group 1 -> etc.
-    const group1Alive = updatedGroup1.filter(c => c.isAlive);
-    const group2Alive = updatedGroup2.filter(c => c.isAlive);
+    const group1Alive = updatedGroup1.filter(c => c.isAlive && c.hp > 0);
+    const group2Alive = updatedGroup2.filter(c => c.isAlive && c.hp > 0);
     
     const maxTurns = Math.max(group1Alive.length, group2Alive.length);
     
@@ -140,7 +140,11 @@ export function WarSystem({ groups, onUpdateGroups }: WarSystemProps) {
         }
       }
 
-      // Check if war is over
+      // Check if war is over after each turn
+      const g1StillAfter = updatedGroup1.filter(c => c.isAlive && c.hp > 0).length;
+      const g2StillAfter = updatedGroup2.filter(c => c.isAlive && c.hp > 0).length;
+      roundLogs.push(`After turn: ${group1Name} ${g1StillAfter} alive, ${group2Name} ${g2StillAfter} alive`);
+      
       if (!isWarActive(updatedGroup1, updatedGroup2)) {
         endWar(updatedGroup1, updatedGroup2, group1Name, group2Name);
         return;
@@ -171,7 +175,7 @@ export function WarSystem({ groups, onUpdateGroups }: WarSystemProps) {
     isGroup1: boolean,
     logs: string[]
   ): Promise<{ currentGroup: Character[]; opposingGroup: Character[]; logs: string[] }> => {
-    if (!character.isAlive) return { currentGroup, opposingGroup, logs };
+    if (!character.isAlive || character.hp <= 0) return { currentGroup, opposingGroup, logs };
 
     let currentChar = character;
     let updatedCurrentGroup = [...currentGroup];
@@ -196,7 +200,7 @@ export function WarSystem({ groups, onUpdateGroups }: WarSystemProps) {
     
     // Support AI: Prioritize helping allies first
     if (classRole === 'SUPPORT' && currentChar.junkTokens > 0) {
-      const allAllies = updatedCurrentGroup.filter(ally => ally.isAlive && ally.id !== currentChar.id);
+      const allAllies = updatedCurrentGroup.filter(ally => ally.isAlive && ally.hp > 0 && ally.id !== currentChar.id);
       const needsRepair = allAllies.find(ally => 
         ally.armorPlates < ally.maxArmorPlates || 
         (ally.hasRangedWeapon && ally.gunPoints < 4)
@@ -361,10 +365,14 @@ export function WarSystem({ groups, onUpdateGroups }: WarSystemProps) {
   };
 
   const endWar = (group1: Character[], group2: Character[], group1Name: string, group2Name: string) => {
-    const group1Alive = group1.filter(c => c.isAlive).length;
-    const group2Alive = group2.filter(c => c.isAlive).length;
+    const group1Alive = group1.filter(c => c.isAlive && c.hp > 0).length;
+    const group2Alive = group2.filter(c => c.isAlive && c.hp > 0).length;
     
     let endLogs: string[] = [];
+    endLogs.push(`\n=== FINAL TALLY ===`);
+    endLogs.push(`${group1Name}: ${group1Alive} alive`);
+    endLogs.push(`${group2Name}: ${group2Alive} alive`);
+    
     if (group1Alive > group2Alive) {
       endLogs.push(`\n🎉 ${group1Name} WINS! (${group1Alive} survivors vs ${group2Alive})`);
     } else if (group2Alive > group1Alive) {
@@ -380,26 +388,29 @@ export function WarSystem({ groups, onUpdateGroups }: WarSystemProps) {
   };
 
   const selectTarget = (attacker: Character, enemies: Character[]): Character | null => {
-    const aliveEnemies = enemies.filter(e => e.isAlive);
+    const aliveEnemies = enemies.filter(e => e.isAlive && e.hp > 0);
     if (aliveEnemies.length === 0) return null;
 
     const attackerRole = CLASS_ROLE_TYPE[attacker.class as keyof typeof CLASS_ROLE_TYPE];
     
-    // Melee characters must target melee enemies first
+    // Melee characters MUST target melee enemies first, then can target anyone
     if (attackerRole === 'MELEE') {
       const meleeEnemies = aliveEnemies.filter(e => CLASS_ROLE_TYPE[e.class as keyof typeof CLASS_ROLE_TYPE] === 'MELEE');
       if (meleeEnemies.length > 0) {
-        return meleeEnemies[Math.floor(Math.random() * meleeEnemies.length)];
+        const target = meleeEnemies[Math.floor(Math.random() * meleeEnemies.length)];
+        return target;
       }
+      // No melee enemies left, can target anyone
     }
     
     // Ranged and Support can target anyone, Melee targets anyone if no melee enemies
-    return aliveEnemies[Math.floor(Math.random() * aliveEnemies.length)];
+    const target = aliveEnemies[Math.floor(Math.random() * aliveEnemies.length)];
+    return target;
   };
 
   const isWarActive = (group1: Character[], group2: Character[]): boolean => {
-    const group1Alive = group1.filter(c => c.isAlive).length;
-    const group2Alive = group2.filter(c => c.isAlive).length;
+    const group1Alive = group1.filter(c => c.isAlive && c.hp > 0).length;
+    const group2Alive = group2.filter(c => c.isAlive && c.hp > 0).length;
     return group1Alive > 0 && group2Alive > 0;
   };
 
@@ -426,10 +437,10 @@ export function WarSystem({ groups, onUpdateGroups }: WarSystemProps) {
             <div key={groupName} className="bg-gray-800 rounded p-3 border border-gray-600">
               <div className="font-bold text-blue-400 mb-2">{groupName}</div>
               <div className="text-xs text-gray-300">
-                {groups[groupName]?.filter(c => c.isAlive).length || 0} alive / {groups[groupName]?.length || 0} total
+                {groups[groupName]?.filter(c => c.isAlive && c.hp > 0).length || 0} alive / {groups[groupName]?.length || 0} total
               </div>
               <div className="flex flex-wrap gap-1 mt-2">
-                {groups[groupName]?.filter(c => c.isAlive).map(char => (
+                {groups[groupName]?.filter(c => c.isAlive && c.hp > 0).map(char => (
                   <Badge key={char.id} variant="secondary" className="text-xs">
                     {char.name.split(' ')[0]}
                   </Badge>
