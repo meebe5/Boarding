@@ -193,6 +193,5 @@ export const createBlankProfile = (): Character => {
     activeEffects: [],
     isAlive: true,
     lastDamageType: 'none',
-    statusEffects: [],
   };
 };
