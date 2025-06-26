@@ -281,17 +281,7 @@ export function CharacterCard({ character, onUpdate }: CharacterCardProps) {
                         <div className="flex-1">
                           <div className="font-bold text-blue-400 text-xs">CARD {cardId}</div>
                           <div className="text-gray-400 text-xs mt-1">
-                            {(() => {
-                              const effect = CARD_EFFECTS[cardId as keyof typeof CARD_EFFECTS];
-                              if (!effect) return `Card ${cardId} - Effect Missing`;
-                              
-                              // Handle case where effect might be an object instead of string
-                              const effectText = typeof effect === 'string' ? effect : 
-                                                (effect.description || effect.name || 'Unknown Effect');
-                              
-                              const bracketMatch = effectText.match(/\[(.*?)\]/);
-                              return bracketMatch ? bracketMatch[0] : effectText.substring(0, 20) + '...';
-                            })()}
+                            {CARD_EFFECTS[cardId as keyof typeof CARD_EFFECTS] || `Card ${cardId}`}
                           </div>
                         </div>
                         <Button

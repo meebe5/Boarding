@@ -48,16 +48,18 @@ export function WarSystem({ groups, onUpdateGroups }: WarSystemProps) {
   };
 
   const processSingleRound = async (group1: Character[], group2: Character[], group1Name: string, group2Name: string) => {
+    let roundLogs: string[] = [`\n--- ROUND ${currentRound} ---`];
+    
+    // Check if war should end at start of round (one team has 0 HP)
     if (!isWarActive(group1, group2)) {
+      roundLogs.push(`War ends - one team has no remaining HP`);
+      setCombatLog(prev => [...prev, ...roundLogs]);
       endWar(group1, group2, group1Name, group2Name);
       return;
     }
 
     let updatedGroup1 = [...group1];
     let updatedGroup2 = [...group2];
-    let roundLogs: string[] = [];
-    
-    roundLogs.push(`\n--- ROUND ${currentRound} ---`);
       
     // Start of turn: draw cards for all living characters
     updatedGroup1 = updatedGroup1.map(character => {
@@ -140,15 +142,10 @@ export function WarSystem({ groups, onUpdateGroups }: WarSystemProps) {
         }
       }
 
-      // Check if war is over after each turn
+      // Log status after each turn but don't end war mid-round
       const g1StillAfter = updatedGroup1.filter(c => c.isAlive && c.hp > 0).length;
       const g2StillAfter = updatedGroup2.filter(c => c.isAlive && c.hp > 0).length;
       roundLogs.push(`After turn: ${group1Name} ${g1StillAfter} alive, ${group2Name} ${g2StillAfter} alive`);
-      
-      if (!isWarActive(updatedGroup1, updatedGroup2)) {
-        endWar(updatedGroup1, updatedGroup2, group1Name, group2Name);
-        return;
-      }
     }
 
     // Round complete - update state and pause
