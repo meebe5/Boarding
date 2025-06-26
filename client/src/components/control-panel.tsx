@@ -8,13 +8,17 @@ interface ControlPanelProps {
   onSaveScenario: () => void;
   onLoadScenario: () => void;
   onResetAllCards: () => void;
+  onAddBlank: () => void;
+  activeGroup: string | null;
 }
 
 export function ControlPanel({ 
   onGenerate, 
   onSaveScenario, 
   onLoadScenario, 
-  onResetAllCards 
+  onResetAllCards,
+  onAddBlank,
+  activeGroup
 }: ControlPanelProps) {
   const [troopCount, setTroopCount] = useState(4);
 

@@ -1,0 +1,94 @@
+[Creature Feature]
+ADD PROFILE - Ability to Click a "+ Create" to Create a Blank profile into the selected group. Ability to add/remove cards from profiles.
+STATUS EFFECTS - Shows which status effects from cards are effecting a [profile]
+
+
+	[FIX BUGS]
+
+
+
+	[Damage system]
+START OF TURN: Draw 2 Cards from same or mixed decks
+Choose 1 to play (resolve immediately), discard the other.
+Card Decks: RANGED, MELEE, UTILITY
+Cards may grant effects, resources, or bonuses.
+ACTION PHASE: Choose 1 Action
+ATTACK: Melee or Ranged (No more rolling to hit, all attacks automatically hit)
+RELOAD: Reloads 4 Bullets into gun, roll 1d4 for damage to the gun (0 Gun Points and the gun cannot be used)
+DEFEND: Boost +2 Armor temporarily 
+REPAIR: Use MATCHING PARTS to repair armor or weapon
+CREATE: Craft basic item using cards or class ability
+
+
+RANGED & MELEE SHARED RESOLUTION:
+Roll Ranged Attack Die: 1d4
+Compare vs Target's Current Armor Value
+NEW Armor system: [AP] = [ARMOR PLATES]. Depending on your class or bonuses you recieve from cards or allies, you gain [ARMOR PLATES]. When an attack hits you, the attack goes against your [ARMOR VALUE]. If the attack meets, or beats your [ARMOR VALUE], it does FULL DAMAGE, piercing right through the armor to your HP but your [ARMOR VALUE] does not decrease. If it gets LESS THAN your current [ARMOR VALUE], then you deduct -1 from your [ARMOR VALUE] and recieve no damage as the armor received it for you. All of this is visible on the characters [PROFILE]. 
+
+To use a [RANGED] Attack, you must have a [RANGED WEAPON] equipped. If you have a [RANGED WEAPON] you have 4 [BULLET TOKENS], represented in the top right of your [PROFILE]. These represent your Bullets. After you use all of your bullets, you must [RELOAD] as an action if you wish to use it again. Because you're using a [JUNK WEAPON - TIER I], reloading damages the weapon. The total health for all [JUNK RANGED WEPAONS] weapons is 4 GP [GUN POINTS]. Everytime you reload it does 1d4 damage to the weapon itself, unless you have a Class/card ability that says otherwise. Once the [RANGED WEAPON] reaches 0 GP, it must be repaired in order to use it again. By default, it takes one [JUNK MATERIAL] to [repair] one[ GUN POINT] on the gun.
+
+[JUNK MATERIAL] - Is a material that can be found in the UTILITY card deck. You do NOT have to discard the other card if a JUNK card is drawn. You can exchange it for a JUNK TOKEN, then add ithe card back to the bottom of the UTILITY deck. You can use as many JUNK TOKENS as you wish to [REPAIR] ONE item. 1 [JUNK TOKEN] = +1 to item. So if you have 3 JUNK TOKENS, you can repair either your [ARMOR PLATES] or a [JUNK WEAPON] for 3 HP or 3 Plates. [JUnk TOKENS] are displayed on your [PROFILE].
+
+MELEE - 1d6
+
+
+🃏 CARD SYSTEM
+Card Draw Rules
+Decks: Melee, Ranged, Utility
+Draw 2 per turn (from same or mixed decks), play 1
+
+RANGE CARDS (x5, #1 - 5)
+1[Careful Shot]
+  → Your next ranged attack ignores 1 Armor
+2[Volley]
+  → Roll your attack twice, choose the higher. Costs 2 Bullet Tokens
+3[Snap Fire]
+ → One additional Attack immediately, but roll -1 damage (min 1)
+4[Take Aim]
+ → +1 to your next ranged attack roll
+5[Ricochet]
+  → If your attack damages armor, it deals 1 HP to enemy
+
+
+MELEE CARDS (x5, #6 - 10)
+6[Patience]
+  → If you use the [DEFEND] action this turn, you gain an additional +2 [ARMOR PLATES] temporarily
+7[Feint]
+  → Your next melee attack ignores 1 Armor
+8[Overhead Strike]
+  → +2 ATTACK an enemy, but if you hit their [ARMOR PLATES], you take 1 self-damage
+9[Deadly Slice]
+  → If you Damage a profiles HP, they recieve -1 ATTACK on their next Action
+10[Parry]
+  → Until your next turn, reduce all melee damage taken by 1
+
+ UTILITY CARDS (x5) (#11 - 15)
+11[Junk Material]
+ → Gain 1 Junk Matieral (used for gun or armor repair)
+12[Triage]
+  → Restore 2 HP to yourself or adjacent ally
+13[Scrap Scan]
+  → Pick one:
+   • Find 1 Junk item,
+   • Reveal armor value of one visible enemy
+14[Retailiation]
+  → 2 HP damage to the [Profile] that attacks you, lasts until the beginning of your next turn
+15[Juicing]
+  →Give an Ally or yourself +2 Temporary Hitpoints, that lasts until the start of your next turn.
+
+All temporarily [HIT POINTS] or temporary [ARMOR PLATES] are damaged FIRST before overlapping to a [PROFILES] actual HP or AP. 
+
+CLASS SYSTEM
+Class		Role	Focus	Examples of Class Passives
+1Shooter	Ranged	Damage	+1 RANGE ATTACK
+2Engineer	Ranged	Utility		On reload, roll 1d4 - 1 vs gun break
+3Scavenger	Range Support		Can REPAIR own/ally GUN 2 GP per [JUNK TOKEN]
+4Tinkerer	Melee Support		Can REPAIR own/ally ARMOR 2 AP per [JUNK TOKEN]
+5Brute		Melee	Damage	+1 MELEE ATTACK
+6Breaker	Melee	Utility		An additional [ARMOR PLATE] is taken away if the 						attack hits a profile with [ARMOR]
+
+
+COMBAT
+
+The simulation has Melee [PROFILES] attack enemy Melee [PROFILES] BEFORE targeting units with a [RANGED WEAPON]. If there are no opposing Melee [PROFILES] available, they can then target ALL enemy units. Ranged [PROFILES] are already free to target ALL enemy units from the start of the simulation.
+

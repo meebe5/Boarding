@@ -1,11 +1,10 @@
 import { useState } from 'react';
 import type { Character } from '@shared/schema';
-import { generateProfile } from '@/lib/character-generator';
+import { generateProfile, createBlankProfile } from '@/lib/character-generator';
 import { CharacterCard } from '@/components/character-card';
 import { GroupSidebar } from '@/components/group-sidebar';
 import { ControlPanel } from '@/components/control-panel';
 import { CardEffectsReference } from '@/components/card-effects-reference';
-import { WarSystem } from '@/components/war-system';
 
 export default function BoardingPage() {
   const [groups, setGroups] = useState<Record<string, Character[]>>({});
@@ -26,9 +25,18 @@ export default function BoardingPage() {
   const migrateCharacter = (character: Character): Character => {
     return {
       ...character,
-      tempArmor: character.tempArmor ?? 0,
+      tempHp: character.tempHp ?? 0,
+      armorPlates: character.armorPlates ?? (character as any).armor ?? 2,
+      maxArmorPlates: character.maxArmorPlates ?? (character as any).armor ?? 2,
+      tempArmorPlates: character.tempArmorPlates ?? 0,
+      bulletTokens: character.bulletTokens ?? (character.hasRangedWeapon ? 4 : 0),
+      gunPoints: character.gunPoints ?? (character.hasRangedWeapon ? 4 : 0),
+      junkTokens: character.junkTokens ?? 0,
+      hasRangedWeapon: character.hasRangedWeapon ?? (character.class <= 3),
       activeEffects: character.activeEffects ?? [],
       isAlive: character.isAlive ?? (character.hp > 0),
+      lastDamageType: character.lastDamageType ?? 'none',
+      cards: character.cards ?? [],
     };
   };
 
@@ -39,6 +47,14 @@ export default function BoardingPage() {
       characters.map(migrateCharacter)
     ])
   );
+
+  const addBlankProfile = () => {
+    if (!activeGroup) return;
+    
+    const blankProfile = createBlankProfile();
+    const updatedGroup = [...(migratedGroups[activeGroup] || []), blankProfile];
+    setGroups({ ...groups, [activeGroup]: updatedGroup });
+  };
 
   const updateProfile = (profileId: string, updatedData: Character) => {
     if (!activeGroup) return;
@@ -100,9 +116,10 @@ export default function BoardingPage() {
     for (const group in migratedGroups) {
       newGroups[group] = migratedGroups[group].map(p => ({ 
         ...migrateCharacter(p), 
-        usedCards: [],
+        cards: [],
         activeEffects: [],
-        tempArmor: 0,
+        tempHp: 0,
+        tempArmorPlates: 0,
       }));
     }
     setGroups(newGroups);
@@ -163,11 +180,7 @@ export default function BoardingPage() {
         </div>
       </div>
       
-      {/* WAR System */}
-      <WarSystem 
-        groups={migratedGroups} 
-        onUpdateGroups={setGroups}
-      />
+      {/* Future: WAR System will be reimplemented with new combat mechanics */}
     </div>
   );
 }

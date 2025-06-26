@@ -18,27 +18,33 @@ export type User = typeof users.$inferSelect;
 
 // Character-related schemas for tactical RPG
 export const activeEffectSchema = z.object({
-  cardId: z.number().min(1).max(10),
+  cardId: z.number().min(1).max(15),
   sourceProfileId: z.string(),
   sourceProfileName: z.string(),
   turnsRemaining: z.number().min(0),
+  effectType: z.enum(['temporary_hp', 'temporary_armor', 'attack_bonus', 'damage_reduction', 'retaliation', 'other']),
+  value: z.number().optional(),
 });
 
 export const characterSchema = z.object({
   id: z.string(),
   name: z.string(),
-  class: z.number().min(1).max(6),
+  class: z.number().min(1).max(6), // 1-Shooter, 2-Engineer, 3-Scavenger, 4-Tinkerer, 5-Brute, 6-Breaker
   tier: z.number().min(1),
   hp: z.number().min(0),
   maxHp: z.number().min(1),
-  con: z.number().min(0).max(2),
-  armor: z.number().min(1).max(3),
-  tempArmor: z.number().min(0).default(0),
-  cards: z.array(z.number().min(1).max(10)),
-  usedCards: z.array(z.number().min(1).max(10)),
-  initiative: z.number().min(1).max(20),
+  tempHp: z.number().min(0).default(0),
+  armorPlates: z.number().min(0).default(0), // Current armor plates
+  maxArmorPlates: z.number().min(0).default(0), // Base armor plates for class
+  tempArmorPlates: z.number().min(0).default(0),
+  bulletTokens: z.number().min(0).max(4).default(4),
+  gunPoints: z.number().min(0).max(4).default(4), // Gun health
+  junkTokens: z.number().min(0).default(0),
+  hasRangedWeapon: z.boolean().default(false),
+  cards: z.array(z.number().min(1).max(15)).default([]), // Empty by default, cards drawn each turn
   activeEffects: z.array(activeEffectSchema).default([]),
   isAlive: z.boolean().default(true),
+  lastDamageType: z.enum(['melee', 'ranged', 'none']).default('none'),
 });
 
 export const groupSchema = z.object({
