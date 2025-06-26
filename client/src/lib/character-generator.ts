@@ -110,13 +110,17 @@ export const generateProfile = (): Character => {
     maxArmorPlates: baseArmor,
     tempArmorPlates: 0,
     bulletTokens: hasRanged ? 4 : 0,
+    maxBulletTokens: 4,
     gunPoints: hasRanged ? 4 : 0,
+    maxGunPoints: 4,
     junkTokens: 0,
     hasRangedWeapon: hasRanged,
     cards: [], // Cards are drawn at start of turn
     activeEffects: [],
     isAlive: true,
     lastDamageType: 'none',
+    meleeDamageDice: '1d6',
+    rangedDamageDice: '1d4',
   };
 };
 

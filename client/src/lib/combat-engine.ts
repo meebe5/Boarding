@@ -9,6 +9,18 @@ export const rollD10 = (): number => Math.floor(Math.random() * 10) + 1;
 export const rollD12 = (): number => Math.floor(Math.random() * 12) + 1;
 export const rollD20 = (): number => Math.floor(Math.random() * 20) + 1;
 
+export const getClassName = (classId: number): string => {
+  const classNames = {
+    1: 'Shooter',
+    2: 'Engineer', 
+    3: 'Scavenger',
+    4: 'Tinkerer',
+    5: 'Brute',
+    6: 'Breaker'
+  };
+  return classNames[classId as keyof typeof classNames] || 'Unknown';
+};
+
 // Parse and roll dice notation (e.g., "1d6", "2d4")
 export const rollDice = (diceNotation: string): number => {
   const match = diceNotation.match(/^(\d+)d(\d+)$/);
@@ -175,6 +187,17 @@ export const getAttackModifiers = (character: Character, attackType: 'melee' | '
   return modifier;
 };
 
+export const getDamageModifiers = (character: Character, attackType: 'melee' | 'ranged'): number => {
+  let modifier = 0;
+  
+  // Class bonuses for damage
+  if (attackType === 'ranged' && character.class === 1) { // Shooter
+    modifier += 1;
+  }
+  
+  return modifier;
+};
+
 // Ranged attack
 export const performRangedAttack = (
   attacker: Character,
@@ -306,7 +329,14 @@ export const performMeleeAttack = (
   if (attackRoll >= effectiveArmor) {
     // Full damage to HP using custom damage dice
     let damage = rollDice(attacker.meleeDamageDice || '1d6');
-    logs.push(`Damage roll (${attacker.meleeDamageDice || '1d6'}): ${damage}`);
+    const damageModifier = getDamageModifiers(attacker, 'melee');
+    
+    if (damageModifier > 0) {
+      damage += damageModifier;
+      logs.push(`Damage roll (${attacker.meleeDamageDice || '1d6'} + ${damageModifier} from ${getClassName(attacker.class)}): ${damage}`);
+    } else {
+      logs.push(`Damage roll (${attacker.meleeDamageDice || '1d6'}): ${damage}`);
+    }
     
     // Apply damage
     if (updatedDefender.tempHp > 0) {
