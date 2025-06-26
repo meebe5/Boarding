@@ -195,13 +195,13 @@ export function CharacterCard({ character, onUpdate }: CharacterCardProps) {
           </div>
 
           <div>
-            <label className="text-xs text-gray-400 uppercase block mb-1">JUNK TOKENS</label>
+            <label className="text-xs text-gray-400 uppercase block mb-1">JUNK MATERIALS</label>
             <div className="flex gap-1 items-center">
               <Wrench className="w-4 h-4 text-orange-500" />
               <Input
                 type="number"
-                value={character.junkTokens}
-                onChange={(e) => handleUpdate({ junkTokens: Math.max(0, parseInt(e.target.value) || 0) })}
+                value={character.junkMaterials}
+                onChange={(e) => handleUpdate({ junkMaterials: Math.max(0, parseInt(e.target.value) || 0) })}
                 className="w-16 h-6 text-xs text-center bg-gray-800 border-gray-600"
                 min="0"
               />
