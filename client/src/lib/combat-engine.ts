@@ -50,9 +50,29 @@ export const playCard = (
   logs.push(`${character.name} plays ${CARD_EFFECTS[cardId as keyof typeof CARD_EFFECTS]}`);
   
   switch (cardId) {
+    case 2: // Volley - Costs 2 Bullet Tokens
+      if (updatedCharacter.bulletTokens >= 2) {
+        updatedCharacter.bulletTokens -= 2;
+        logs.push(`${character.name} spends 2 bullet tokens for Volley effect`);
+      } else {
+        logs.push(`${character.name} lacks bullet tokens for Volley!`);
+        return { character: updatedCharacter, log: logs };
+      }
+      break;
+      
+    case 3: // Snap Fire - Costs 2 Bullet Tokens
+      if (updatedCharacter.bulletTokens >= 2) {
+        updatedCharacter.bulletTokens -= 2;
+        logs.push(`${character.name} spends 2 bullet tokens for Snap Fire - will make two attacks this turn!`);
+      } else {
+        logs.push(`${character.name} lacks bullet tokens for Snap Fire!`);
+        return { character: updatedCharacter, log: logs };
+      }
+      break;
+      
     case 11: // Junk Material
-      updatedCharacter.junkTokens += 1;
-      logs.push(`${character.name} gains 1 Junk Token (${updatedCharacter.junkTokens} total)`);
+      updatedCharacter.junkMaterials += 1;
+      logs.push(`${character.name} gains 1 Junk Material (${updatedCharacter.junkMaterials} total)`);
       break;
       
     case 12: // Triage - Restore 2 HP
@@ -69,8 +89,8 @@ export const playCard = (
       break;
       
     case 13: // Scrap Scan
-      updatedCharacter.junkTokens += 1;
-      logs.push(`${character.name} finds 1 Junk Token (${updatedCharacter.junkTokens} total)`);
+      updatedCharacter.junkMaterials += 1;
+      logs.push(`${character.name} finds 1 Junk Material (${updatedCharacter.junkMaterials} total)`);
       break;
       
     case 14: // Retaliation
@@ -140,7 +160,7 @@ export const getAttackModifiers = (character: Character, attackType: 'melee' | '
 export const performRangedAttack = (
   attacker: Character,
   defender: Character,
-  useVolley: boolean = false
+  isSnapFireSecondAttack: boolean = false
 ): { attacker: Character; defender: Character; log: string[] } => {
   const logs: string[] = [];
   
@@ -152,19 +172,29 @@ export const performRangedAttack = (
   let updatedAttacker = { ...attacker };
   let updatedDefender = { ...defender };
   
-  // Use bullets
-  const bulletsUsed = useVolley ? 2 : 1;
-  updatedAttacker.bulletTokens = Math.max(0, updatedAttacker.bulletTokens - bulletsUsed);
+  // Use bullets (1 for normal attack, already deducted for volley/snap fire in card play)
+  if (!isSnapFireSecondAttack) {
+    updatedAttacker.bulletTokens = Math.max(0, updatedAttacker.bulletTokens - 1);
+  }
   
   // Roll attack
-  let attackRoll = rollD4() + getAttackModifiers(attacker, 'ranged');
+  let attackRoll = rollD6() + getAttackModifiers(attacker, 'ranged');
   
-  if (useVolley && attacker.bulletTokens >= 2) {
-    const roll2 = rollD4() + getAttackModifiers(attacker, 'ranged');
-    attackRoll = Math.max(attackRoll, roll2);
-    logs.push(`${attacker.name} uses Volley - rolls twice, takes higher (${attackRoll})`);
+  // Check for Volley effect (show both rolls)
+  const hasVolley = updatedAttacker.activeEffects.some(e => e.cardId === 2);
+  if (hasVolley && !isSnapFireSecondAttack) {
+    const roll1 = rollD6() + getAttackModifiers(attacker, 'ranged');
+    const roll2 = rollD6() + getAttackModifiers(attacker, 'ranged');
+    attackRoll = Math.max(roll1, roll2);
+    logs.push(`${attacker.name} uses Volley! Roll 1: ${roll1}, Roll 2: ${roll2}, choosing higher: ${attackRoll}`);
   } else {
-    logs.push(`${attacker.name} ranged attack roll: ${attackRoll}`);
+    // Apply Snap Fire penalty to second attack
+    if (isSnapFireSecondAttack) {
+      attackRoll = Math.max(1, attackRoll - 2); // -2 attack for second snap fire attack
+      logs.push(`${attacker.name} second Snap Fire attack (with -2 penalty): ${attackRoll}`);
+    } else {
+      logs.push(`${attacker.name} ranged attack roll: ${attackRoll}`);
+    }
   }
   
   // Check armor
@@ -210,10 +240,10 @@ export const performRangedAttack = (
       logs.push(`${defender.name} loses 1 armor plate`);
     }
     
-    // Ricochet effect on armor hit
+    // Ricochet effect: if armor plates were lost, deal 1 HP damage
     if (attacker.activeEffects.some(e => e.cardId === 5)) {
       updatedDefender.hp = Math.max(0, updatedDefender.hp - 1);
-      logs.push(`Ricochet deals 1 damage to ${defender.name} after hitting armor`);
+      logs.push(`Ricochet! Armor plate loss causes 1 HP damage to ${defender.name}`);
     }
   }
   

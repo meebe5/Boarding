@@ -295,8 +295,8 @@ export function WarSystem({ groups, onUpdateGroups }: WarSystemProps) {
           updatedOpposingGroup[targetIndex] = attackResult.defender;
           roundLogs.push(...attackResult.log);
           
-          // Check for extra attack from Snap Fire (second attack has no penalty)
-          if (attackResult.attacker.tempBonuses?.extraAttack) {
+          // Check for Snap Fire effect - make second attack with penalty
+          if (attackResult.attacker.activeEffects.some(e => e.cardId === 3)) {
             const secondAttackResult = performRangedAttack(attackResult.attacker, attackResult.defender, true);
             updatedCurrentGroup[charIndex] = secondAttackResult.attacker;
             updatedOpposingGroup[targetIndex] = secondAttackResult.defender;
@@ -309,8 +309,8 @@ export function WarSystem({ groups, onUpdateGroups }: WarSystemProps) {
           updatedOpposingGroup[targetIndex] = attackResult.defender;
           roundLogs.push(...attackResult.log);
           
-          // Check for extra attack from Snap Fire (second attack has no penalty)
-          if (attackResult.attacker.tempBonuses?.extraAttack) {
+          // Check for Snap Fire effect - make second attack with penalty  
+          if (attackResult.attacker.activeEffects.some(e => e.cardId === 3)) {
             const secondAttackResult = performMeleeAttack(attackResult.attacker, attackResult.defender, true);
             updatedCurrentGroup[charIndex] = secondAttackResult.attacker;
             updatedOpposingGroup[targetIndex] = secondAttackResult.defender;
@@ -331,8 +331,8 @@ export function WarSystem({ groups, onUpdateGroups }: WarSystemProps) {
             updatedOpposingGroup[targetIndex] = attackResult.defender;
             roundLogs.push(...attackResult.log);
             
-            // Check for extra attack from Snap Fire (second attack has no penalty)
-            if (attackResult.attacker.tempBonuses?.extraAttack) {
+            // Check for Snap Fire effect - make second attack with penalty
+            if (attackResult.attacker.activeEffects.some(e => e.cardId === 3)) {
               const secondAttackResult = performRangedAttack(attackResult.attacker, attackResult.defender, true);
               updatedCurrentGroup[charIndex] = secondAttackResult.attacker;
               updatedOpposingGroup[targetIndex] = secondAttackResult.defender;
@@ -344,8 +344,8 @@ export function WarSystem({ groups, onUpdateGroups }: WarSystemProps) {
             updatedOpposingGroup[targetIndex] = attackResult.defender;
             roundLogs.push(...attackResult.log);
             
-            // Check for extra attack from Snap Fire (second attack has no penalty)
-            if (attackResult.attacker.tempBonuses?.extraAttack) {
+            // Check for Snap Fire effect - make second attack with penalty
+            if (attackResult.attacker.activeEffects.some(e => e.cardId === 3)) {
               const secondAttackResult = performMeleeAttack(attackResult.attacker, attackResult.defender, true);
               updatedCurrentGroup[charIndex] = secondAttackResult.attacker;
               updatedOpposingGroup[targetIndex] = secondAttackResult.defender;
