@@ -32,6 +32,7 @@ export function WarSystem({ groups, onUpdateGroups }: WarSystemProps) {
     setSelectedGroups([group1Name, group2Name]);
     setCombatLog([`=== WAR BEGINS: ${group1Name} vs ${group2Name} ===`]);
     setIsSimulating(true);
+    setCurrentRound(1);
     
     // Start first round
     simulateRound(groups[group1Name], groups[group2Name], group1Name, group2Name);
@@ -55,198 +56,89 @@ export function WarSystem({ groups, onUpdateGroups }: WarSystemProps) {
     let updatedGroup1 = [...group1];
     let updatedGroup2 = [...group2];
     let roundLogs: string[] = [];
+    
     roundLogs.push(`\n--- ROUND ${currentRound} ---`);
       
-      // Start of turn: draw cards for all living characters
-      updatedGroup1 = updatedGroup1.map(character => {
-        if (!character.isAlive) return character;
-        
-        const turnResult = startTurn(character);
-        roundLogs.push(...turnResult.log);
-        
-        // Draw cards based on class
-        const drawnCards = drawCardsForClass(character.class);
-        const updatedChar = { ...turnResult.character, cards: drawnCards };
-        roundLogs.push(`${character.name} draws from ${CLASS_ROLE_TYPE[character.class as keyof typeof CLASS_ROLE_TYPE]} deck: Cards ${drawnCards.join(', ')}`);
-        
-        return updatedChar;
-      });
+    // Start of turn: draw cards for all living characters
+    updatedGroup1 = updatedGroup1.map(character => {
+      if (!character.isAlive) return character;
+      
+      const turnResult = startTurn(character);
+      roundLogs.push(...turnResult.log);
+      
+      // Draw cards based on class
+      const drawnCards = drawCardsForClass(character.class);
+      const updatedChar = { ...turnResult.character, cards: drawnCards };
+      roundLogs.push(`${character.name} draws from ${CLASS_ROLE_TYPE[character.class as keyof typeof CLASS_ROLE_TYPE]} deck: Cards ${drawnCards.join(', ')}`);
+      
+      return updatedChar;
+    });
 
-      updatedGroup2 = updatedGroup2.map(character => {
-        if (!character.isAlive) return character;
-        
-        const turnResult = startTurn(character);
-        roundLogs.push(...turnResult.log);
-        
-        // Draw cards based on class
-        const drawnCards = drawCardsForClass(character.class);
-        const updatedChar = { ...turnResult.character, cards: drawnCards };
-        roundLogs.push(`${character.name} draws from ${CLASS_ROLE_TYPE[character.class as keyof typeof CLASS_ROLE_TYPE]} deck: Cards ${drawnCards.join(', ')}`);
-        
-        return updatedChar;
-      });
+    updatedGroup2 = updatedGroup2.map(character => {
+      if (!character.isAlive) return character;
+      
+      const turnResult = startTurn(character);
+      roundLogs.push(...turnResult.log);
+      
+      // Draw cards based on class
+      const drawnCards = drawCardsForClass(character.class);
+      const updatedChar = { ...turnResult.character, cards: drawnCards };
+      roundLogs.push(`${character.name} draws from ${CLASS_ROLE_TYPE[character.class as keyof typeof CLASS_ROLE_TYPE]} deck: Cards ${drawnCards.join(', ')}`);
+      
+      return updatedChar;
+    });
 
     // Create alternating turn order: Group 1 -> Group 2 -> Group 1 -> etc.
     const group1Alive = updatedGroup1.filter(c => c.isAlive);
     const group2Alive = updatedGroup2.filter(c => c.isAlive);
     
     const maxTurns = Math.max(group1Alive.length, group2Alive.length);
-    const turnOrder: Array<{ character: Character; isGroup1: boolean; groupName: string }> = [];
     
+    // Process alternating turns
     for (let i = 0; i < maxTurns; i++) {
+      // Group 1 turn
       if (i < group1Alive.length) {
-        turnOrder.push({ character: group1Alive[i], isGroup1: true, groupName: group1Name });
-      }
-      if (i < group2Alive.length) {
-        turnOrder.push({ character: group2Alive[i], isGroup1: false, groupName: group2Name });
-      }
-    }
-
-    // Process each character's turn
-    for (const { character, isGroup1, groupName } of turnOrder) {
-        if (!character.isAlive) continue;
-
-        const currentGroup = character.isGroup1 ? updatedGroup1 : updatedGroup2;
-        const opposingGroup = character.isGroup1 ? updatedGroup2 : updatedGroup1;
-        
-        const charIndex = currentGroup.findIndex(c => c.id === character.id);
-        if (charIndex === -1) continue;
-
-        let currentChar = currentGroup[charIndex];
-        
-        roundLogs.push(`\n${currentChar.name}'s Turn:`);
-
-        // Play a random card if available
-        if (currentChar.cards.length > 0) {
-          const randomCardIndex = Math.floor(Math.random() * currentChar.cards.length);
-          const cardToPlay = currentChar.cards[randomCardIndex];
-          
-          const cardResult = playCard(currentChar, cardToPlay, [...currentGroup, ...opposingGroup]);
-          currentChar = cardResult.character;
-          roundLogs.push(...cardResult.log);
-          currentGroup[charIndex] = currentChar;
-        }
-
-        // AI Decision Making based on class role
-        const classRole = CLASS_ROLE_TYPE[currentChar.class as keyof typeof CLASS_ROLE_TYPE];
-        
-        // Support AI: Prioritize helping allies first
-        if (classRole === 'SUPPORT' && currentChar.junkTokens > 0) {
-          const allAllies = currentGroup.filter(ally => ally.isAlive && ally.id !== currentChar.id);
-          const needsRepair = allAllies.find(ally => 
-            ally.armorPlates < ally.maxArmorPlates || 
-            (ally.hasRangedWeapon && ally.gunPoints < 4)
+        const character = group1Alive[i];
+        const charIndex = updatedGroup1.findIndex(c => c.id === character.id);
+        if (charIndex !== -1) {
+          const result = await processCharacterTurn(
+            updatedGroup1[charIndex], 
+            updatedGroup1, 
+            updatedGroup2, 
+            charIndex, 
+            true,
+            roundLogs
           );
-          
-          if (needsRepair) {
-            const repairTarget = needsRepair.armorPlates < needsRepair.maxArmorPlates ? 'ARMOR' : 'GUN';
-            const tokensToUse = Math.min(currentChar.junkTokens, 2);
-            const repairResult = performRepair(currentChar, repairTarget, tokensToUse);
-            currentGroup[charIndex] = repairResult.character;
-            roundLogs.push(...repairResult.log);
-            continue;
-          }
+          updatedGroup1 = result.currentGroup;
+          updatedGroup2 = result.opposingGroup;
+          roundLogs = result.logs;
         }
-        
-        // Ranged AI: Must reload/repair if can't shoot
-        if (classRole === 'RANGED' && currentChar.hasRangedWeapon) {
-          if (currentChar.bulletTokens === 0) {
-            // Must reload
-            const reloadResult = performReload(currentChar);
-            currentGroup[charIndex] = reloadResult.character;
-            roundLogs.push(...reloadResult.log);
-            continue;
-          } else if (currentChar.gunPoints === 0) {
-            // Gun broken - need junk to repair
-            if (currentChar.junkTokens > 0) {
-              const repairResult = performRepair(currentChar, 'GUN', Math.min(currentChar.junkTokens, 2));
-              currentGroup[charIndex] = repairResult.character;
-              roundLogs.push(...repairResult.log);
-              continue;
-            } else {
-              // No junk - draw support card for junk material if possible
-              const supportCards = [11, 13]; // Junk Material and Scrap Scan
-              const hasJunkCard = currentChar.cards.some(card => supportCards.includes(card));
-              if (hasJunkCard) {
-                const junkCard = currentChar.cards.find(card => supportCards.includes(card));
-                if (junkCard) {
-                  const cardResult = playCard(currentChar, junkCard, [...currentGroup, ...opposingGroup]);
-                  currentChar = cardResult.character;
-                  roundLogs.push(...cardResult.log);
-                  currentGroup[charIndex] = currentChar;
-                  continue;
-                }
-              }
-            }
-          }
+      }
+
+      // Check if war is over
+      if (!isWarActive(updatedGroup1, updatedGroup2)) {
+        endWar(updatedGroup1, updatedGroup2, group1Name, group2Name);
+        return;
+      }
+
+      // Group 2 turn
+      if (i < group2Alive.length) {
+        const character = group2Alive[i];
+        const charIndex = updatedGroup2.findIndex(c => c.id === character.id);
+        if (charIndex !== -1) {
+          const result = await processCharacterTurn(
+            updatedGroup2[charIndex], 
+            updatedGroup2, 
+            updatedGroup1, 
+            charIndex, 
+            false,
+            roundLogs
+          );
+          updatedGroup2 = result.currentGroup;
+          updatedGroup1 = result.opposingGroup;
+          roundLogs = result.logs;
         }
-        
-        // Combat decision making
-        const actionRoll = Math.random();
-        
-        if (classRole === 'MELEE') {
-          // Melee: 85% attack, 15% defend
-          if (actionRoll < 0.85) {
-            // Attack
-            const target = selectTarget(currentChar, opposingGroup);
-            if (target) {
-              const targetIndex = opposingGroup.findIndex(c => c.id === target.id);
-              const attackResult = performMeleeAttack(currentChar, opposingGroup[targetIndex]);
-              currentGroup[charIndex] = attackResult.attacker;
-              opposingGroup[targetIndex] = attackResult.defender;
-              roundLogs.push(...attackResult.log);
-            }
-          } else {
-            // Defend
-            const defendResult = performDefend(currentChar);
-            currentGroup[charIndex] = defendResult.character;
-            roundLogs.push(...defendResult.log);
-          }
-        } else if (classRole === 'RANGED') {
-          // Ranged: Always attack if possible (already handled reload/repair above)
-          const target = selectTarget(currentChar, opposingGroup);
-          if (target) {
-            const targetIndex = opposingGroup.findIndex(c => c.id === target.id);
-            
-            if (currentChar.hasRangedWeapon && currentChar.bulletTokens > 0 && currentChar.gunPoints > 0) {
-              const attackResult = performRangedAttack(currentChar, opposingGroup[targetIndex]);
-              currentGroup[charIndex] = attackResult.attacker;
-              opposingGroup[targetIndex] = attackResult.defender;
-              roundLogs.push(...attackResult.log);
-            } else {
-              // Fallback to melee if ranged unavailable
-              const attackResult = performMeleeAttack(currentChar, opposingGroup[targetIndex]);
-              currentGroup[charIndex] = attackResult.attacker;
-              opposingGroup[targetIndex] = attackResult.defender;
-              roundLogs.push(...attackResult.log);
-            }
-          }
-        } else {
-          // Support: 80% attack, 20% defend (after helping allies)
-          if (actionRoll < 0.8) {
-            const target = selectTarget(currentChar, opposingGroup);
-            if (target) {
-              const targetIndex = opposingGroup.findIndex(c => c.id === target.id);
-              
-              if (currentChar.hasRangedWeapon && currentChar.bulletTokens > 0 && currentChar.gunPoints > 0) {
-                const attackResult = performRangedAttack(currentChar, opposingGroup[targetIndex]);
-                currentGroup[charIndex] = attackResult.attacker;
-                opposingGroup[targetIndex] = attackResult.defender;
-                roundLogs.push(...attackResult.log);
-              } else {
-                const attackResult = performMeleeAttack(currentChar, opposingGroup[targetIndex]);
-                currentGroup[charIndex] = attackResult.attacker;
-                opposingGroup[targetIndex] = attackResult.defender;
-                roundLogs.push(...attackResult.log);
-              }
-            }
-          } else {
-            // Defend
-            const defendResult = performDefend(currentChar);
-            currentGroup[charIndex] = defendResult.character;
-            roundLogs.push(...defendResult.log);
-          }
-        }
+      }
 
       // Check if war is over
       if (!isWarActive(updatedGroup1, updatedGroup2)) {
@@ -269,6 +161,158 @@ export function WarSystem({ groups, onUpdateGroups }: WarSystemProps) {
     setCombatLog(prev => [...prev, ...roundLogs, `\n--- ROUND ${currentRound} COMPLETE ---`, `Press CONTINUE to proceed to Round ${currentRound + 1}`]);
     setIsSimulating(false);
     setIsPaused(true);
+  };
+
+  const processCharacterTurn = async (
+    character: Character,
+    currentGroup: Character[],
+    opposingGroup: Character[],
+    charIndex: number,
+    isGroup1: boolean,
+    logs: string[]
+  ): Promise<{ currentGroup: Character[]; opposingGroup: Character[]; logs: string[] }> => {
+    if (!character.isAlive) return { currentGroup, opposingGroup, logs };
+
+    let currentChar = character;
+    let updatedCurrentGroup = [...currentGroup];
+    let updatedOpposingGroup = [...opposingGroup];
+    let roundLogs = [...logs];
+    
+    roundLogs.push(`\n${currentChar.name}'s Turn:`);
+
+    // Play a random card if available
+    if (currentChar.cards.length > 0) {
+      const randomCardIndex = Math.floor(Math.random() * currentChar.cards.length);
+      const cardToPlay = currentChar.cards[randomCardIndex];
+      
+      const cardResult = playCard(currentChar, cardToPlay, [...updatedCurrentGroup, ...updatedOpposingGroup]);
+      currentChar = cardResult.character;
+      roundLogs.push(...cardResult.log);
+      updatedCurrentGroup[charIndex] = currentChar;
+    }
+
+    // AI Decision Making based on class role
+    const classRole = CLASS_ROLE_TYPE[currentChar.class as keyof typeof CLASS_ROLE_TYPE];
+    
+    // Support AI: Prioritize helping allies first
+    if (classRole === 'SUPPORT' && currentChar.junkTokens > 0) {
+      const allAllies = updatedCurrentGroup.filter(ally => ally.isAlive && ally.id !== currentChar.id);
+      const needsRepair = allAllies.find(ally => 
+        ally.armorPlates < ally.maxArmorPlates || 
+        (ally.hasRangedWeapon && ally.gunPoints < 4)
+      );
+      
+      if (needsRepair) {
+        const repairTarget = needsRepair.armorPlates < needsRepair.maxArmorPlates ? 'ARMOR' : 'GUN';
+        const tokensToUse = Math.min(currentChar.junkTokens, 2);
+        const repairResult = performRepair(currentChar, repairTarget, tokensToUse);
+        updatedCurrentGroup[charIndex] = repairResult.character;
+        roundLogs.push(...repairResult.log);
+        return { currentGroup: updatedCurrentGroup, opposingGroup: updatedOpposingGroup, logs: roundLogs };
+      }
+    }
+    
+    // Ranged AI: Must reload/repair if can't shoot
+    if (classRole === 'RANGED' && currentChar.hasRangedWeapon) {
+      if (currentChar.bulletTokens === 0) {
+        // Must reload
+        const reloadResult = performReload(currentChar);
+        updatedCurrentGroup[charIndex] = reloadResult.character;
+        roundLogs.push(...reloadResult.log);
+        return { currentGroup: updatedCurrentGroup, opposingGroup: updatedOpposingGroup, logs: roundLogs };
+      } else if (currentChar.gunPoints === 0) {
+        // Gun broken - need junk to repair
+        if (currentChar.junkTokens > 0) {
+          const repairResult = performRepair(currentChar, 'GUN', Math.min(currentChar.junkTokens, 2));
+          updatedCurrentGroup[charIndex] = repairResult.character;
+          roundLogs.push(...repairResult.log);
+          return { currentGroup: updatedCurrentGroup, opposingGroup: updatedOpposingGroup, logs: roundLogs };
+        } else {
+          // No junk - draw support card for junk material if possible
+          const supportCards = [11, 13]; // Junk Material and Scrap Scan
+          const hasJunkCard = currentChar.cards.some(card => supportCards.includes(card));
+          if (hasJunkCard) {
+            const junkCard = currentChar.cards.find(card => supportCards.includes(card));
+            if (junkCard) {
+              const cardResult = playCard(currentChar, junkCard, [...updatedCurrentGroup, ...updatedOpposingGroup]);
+              currentChar = cardResult.character;
+              roundLogs.push(...cardResult.log);
+              updatedCurrentGroup[charIndex] = currentChar;
+              return { currentGroup: updatedCurrentGroup, opposingGroup: updatedOpposingGroup, logs: roundLogs };
+            }
+          }
+        }
+      }
+    }
+    
+    // Combat decision making
+    const actionRoll = Math.random();
+    
+    if (classRole === 'MELEE') {
+      // Melee: 85% attack, 15% defend
+      if (actionRoll < 0.85) {
+        // Attack
+        const target = selectTarget(currentChar, updatedOpposingGroup);
+        if (target) {
+          const targetIndex = updatedOpposingGroup.findIndex(c => c.id === target.id);
+          const attackResult = performMeleeAttack(currentChar, updatedOpposingGroup[targetIndex]);
+          updatedCurrentGroup[charIndex] = attackResult.attacker;
+          updatedOpposingGroup[targetIndex] = attackResult.defender;
+          roundLogs.push(...attackResult.log);
+        }
+      } else {
+        // Defend
+        const defendResult = performDefend(currentChar);
+        updatedCurrentGroup[charIndex] = defendResult.character;
+        roundLogs.push(...defendResult.log);
+      }
+    } else if (classRole === 'RANGED') {
+      // Ranged: Always attack if possible (already handled reload/repair above)
+      const target = selectTarget(currentChar, updatedOpposingGroup);
+      if (target) {
+        const targetIndex = updatedOpposingGroup.findIndex(c => c.id === target.id);
+        
+        if (currentChar.hasRangedWeapon && currentChar.bulletTokens > 0 && currentChar.gunPoints > 0) {
+          const attackResult = performRangedAttack(currentChar, updatedOpposingGroup[targetIndex]);
+          updatedCurrentGroup[charIndex] = attackResult.attacker;
+          updatedOpposingGroup[targetIndex] = attackResult.defender;
+          roundLogs.push(...attackResult.log);
+        } else {
+          // Fallback to melee if ranged unavailable
+          const attackResult = performMeleeAttack(currentChar, updatedOpposingGroup[targetIndex]);
+          updatedCurrentGroup[charIndex] = attackResult.attacker;
+          updatedOpposingGroup[targetIndex] = attackResult.defender;
+          roundLogs.push(...attackResult.log);
+        }
+      }
+    } else {
+      // Support: 80% attack, 20% defend (after helping allies)
+      if (actionRoll < 0.8) {
+        const target = selectTarget(currentChar, updatedOpposingGroup);
+        if (target) {
+          const targetIndex = updatedOpposingGroup.findIndex(c => c.id === target.id);
+          
+          if (currentChar.hasRangedWeapon && currentChar.bulletTokens > 0 && currentChar.gunPoints > 0) {
+            const attackResult = performRangedAttack(currentChar, updatedOpposingGroup[targetIndex]);
+            updatedCurrentGroup[charIndex] = attackResult.attacker;
+            updatedOpposingGroup[targetIndex] = attackResult.defender;
+            roundLogs.push(...attackResult.log);
+          } else {
+            const attackResult = performMeleeAttack(currentChar, updatedOpposingGroup[targetIndex]);
+            updatedCurrentGroup[charIndex] = attackResult.attacker;
+            updatedOpposingGroup[targetIndex] = attackResult.defender;
+            roundLogs.push(...attackResult.log);
+          }
+        }
+      } else {
+        // Defend
+        const defendResult = performDefend(currentChar);
+        updatedCurrentGroup[charIndex] = defendResult.character;
+        roundLogs.push(...defendResult.log);
+      }
+    }
+
+    return { currentGroup: updatedCurrentGroup, opposingGroup: updatedOpposingGroup, logs: roundLogs };
   };
 
   const continueWar = () => {

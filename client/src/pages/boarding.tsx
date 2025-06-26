@@ -145,6 +145,8 @@ export default function BoardingPage() {
         onResetAllCards={resetAllCards}
         onAddBlank={addBlankProfile}
         activeGroup={activeGroup}
+        onAddBlank={addBlankProfile}
+        activeGroup={activeGroup}
       />
 
       <div className="flex gap-6">
