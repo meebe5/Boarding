@@ -164,8 +164,9 @@ export const performRangedAttack = (
 ): { attacker: Character; defender: Character; log: string[] } => {
   const logs: string[] = [];
   
-  if (!attacker.hasRangedWeapon || attacker.bulletTokens <= 0) {
-    logs.push(`${attacker.name} cannot perform ranged attack - no ammo or weapon`);
+  if (!attacker.hasRangedWeapon || attacker.bulletTokens <= 0 || attacker.gunPoints === 0) {
+    const reason = attacker.gunPoints === 0 ? "gun is broken" : !attacker.hasRangedWeapon ? "no weapon" : "no ammo";
+    logs.push(`${attacker.name} cannot perform ranged attack - ${reason}`);
     return { attacker, defender, log: logs };
   }
   
@@ -425,7 +426,7 @@ export const performReload = (character: Character): { character: Character; log
   if (updatedCharacter.gunPoints === 0) {
     updatedCharacter.hasRangedWeapon = false;
     updatedCharacter.bulletTokens = 0;
-    logs.push(`${character.name}'s gun is destroyed!`);
+    logs.push(`${character.name}'s gun is broken! Cannot attack with ranged weapons until repaired.`);
   }
   
   return { character: updatedCharacter, log: logs };
