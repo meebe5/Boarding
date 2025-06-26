@@ -148,7 +148,16 @@ export function WarSystem({ groups, onUpdateGroups }: WarSystemProps) {
       roundLogs.push(`After turn: ${group1Name} ${g1StillAfter} alive, ${group2Name} ${g2StillAfter} alive`);
     }
 
-    // Round complete - update state and pause
+    // Always update combat log with this round's actions first
+    setCombatLog(prev => [...prev, ...roundLogs]);
+    
+    // Check if war should end after this round is complete
+    if (!isWarActive(updatedGroup1, updatedGroup2)) {
+      endWar(updatedGroup1, updatedGroup2, group1Name, group2Name);
+      return;
+    }
+
+    // Round complete - update state and pause for next round
     setCurrentRound(prev => prev + 1);
     setCurrentWarState({ group1: updatedGroup1, group2: updatedGroup2, group1Name, group2Name });
     
@@ -159,7 +168,7 @@ export function WarSystem({ groups, onUpdateGroups }: WarSystemProps) {
     };
     onUpdateGroups(newGroups);
 
-    setCombatLog(prev => [...prev, ...roundLogs, `\n--- ROUND ${currentRound} COMPLETE ---`, `Press CONTINUE to proceed to Round ${currentRound + 1}`]);
+    setCombatLog(prev => [...prev, `\n--- ROUND ${currentRound} COMPLETE ---`, `Press CONTINUE to proceed to Round ${currentRound + 1}`]);
     setIsSimulating(false);
     setIsPaused(true);
   };
