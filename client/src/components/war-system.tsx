@@ -14,7 +14,15 @@ interface WarSystemProps {
 export function WarSystem({ groups, onUpdateGroups }: WarSystemProps) {
   const [combatLog, setCombatLog] = useState<string[]>([]);
   const [isSimulating, setIsSimulating] = useState(false);
+  const [isPaused, setIsPaused] = useState(false);
   const [selectedGroups, setSelectedGroups] = useState<[string, string] | null>(null);
+  const [currentRound, setCurrentRound] = useState(1);
+  const [currentWarState, setCurrentWarState] = useState<{
+    group1: Character[];
+    group2: Character[];
+    group1Name: string;
+    group2Name: string;
+  } | null>(null);
 
   const groupNames = Object.keys(groups);
   
@@ -32,11 +40,22 @@ export function WarSystem({ groups, onUpdateGroups }: WarSystemProps) {
   const simulateRound = async (group1: Character[], group2: Character[], group1Name: string, group2Name: string) => {
     let updatedGroup1 = [...group1];
     let updatedGroup2 = [...group2];
-    let roundLogs: string[] = [];
-    let roundNumber = 1;
+    
+    setCurrentWarState({ group1: updatedGroup1, group2: updatedGroup2, group1Name, group2Name });
+    
+    await processSingleRound(updatedGroup1, updatedGroup2, group1Name, group2Name);
+  };
 
-    while (isWarActive(updatedGroup1, updatedGroup2) && roundNumber <= 20) {
-      roundLogs.push(`\n--- ROUND ${roundNumber} ---`);
+  const processSingleRound = async (group1: Character[], group2: Character[], group1Name: string, group2Name: string) => {
+    if (!isWarActive(group1, group2)) {
+      endWar(group1, group2, group1Name, group2Name);
+      return;
+    }
+
+    let updatedGroup1 = [...group1];
+    let updatedGroup2 = [...group2];
+    let roundLogs: string[] = [];
+    roundLogs.push(`\n--- ROUND ${currentRound} ---`);
       
       // Start of turn: draw cards for all living characters
       updatedGroup1 = updatedGroup1.map(character => {
@@ -67,14 +86,24 @@ export function WarSystem({ groups, onUpdateGroups }: WarSystemProps) {
         return updatedChar;
       });
 
-      // Create turn order based on initiative (not implemented in new system, using class order)
-      const allCharacters = [
-        ...updatedGroup1.filter(c => c.isAlive).map(c => ({ ...c, groupName: group1Name, isGroup1: true })),
-        ...updatedGroup2.filter(c => c.isAlive).map(c => ({ ...c, groupName: group2Name, isGroup1: false }))
-      ].sort(() => Math.random() - 0.5); // Random turn order for now
+    // Create alternating turn order: Group 1 -> Group 2 -> Group 1 -> etc.
+    const group1Alive = updatedGroup1.filter(c => c.isAlive);
+    const group2Alive = updatedGroup2.filter(c => c.isAlive);
+    
+    const maxTurns = Math.max(group1Alive.length, group2Alive.length);
+    const turnOrder: Array<{ character: Character; isGroup1: boolean; groupName: string }> = [];
+    
+    for (let i = 0; i < maxTurns; i++) {
+      if (i < group1Alive.length) {
+        turnOrder.push({ character: group1Alive[i], isGroup1: true, groupName: group1Name });
+      }
+      if (i < group2Alive.length) {
+        turnOrder.push({ character: group2Alive[i], isGroup1: false, groupName: group2Name });
+      }
+    }
 
-      // Process each character's turn
-      for (const character of allCharacters) {
+    // Process each character's turn
+    for (const { character, isGroup1, groupName } of turnOrder) {
         if (!character.isAlive) continue;
 
         const currentGroup = character.isGroup1 ? updatedGroup1 : updatedGroup2;
@@ -98,24 +127,94 @@ export function WarSystem({ groups, onUpdateGroups }: WarSystemProps) {
           currentGroup[charIndex] = currentChar;
         }
 
-        // Choose action (80% attack, 20% defend/reload/repair)
+        // AI Decision Making based on class role
+        const classRole = CLASS_ROLE_TYPE[currentChar.class as keyof typeof CLASS_ROLE_TYPE];
+        
+        // Support AI: Prioritize helping allies first
+        if (classRole === 'SUPPORT' && currentChar.junkTokens > 0) {
+          const allAllies = currentGroup.filter(ally => ally.isAlive && ally.id !== currentChar.id);
+          const needsRepair = allAllies.find(ally => 
+            ally.armorPlates < ally.maxArmorPlates || 
+            (ally.hasRangedWeapon && ally.gunPoints < 4)
+          );
+          
+          if (needsRepair) {
+            const repairTarget = needsRepair.armorPlates < needsRepair.maxArmorPlates ? 'ARMOR' : 'GUN';
+            const tokensToUse = Math.min(currentChar.junkTokens, 2);
+            const repairResult = performRepair(currentChar, repairTarget, tokensToUse);
+            currentGroup[charIndex] = repairResult.character;
+            roundLogs.push(...repairResult.log);
+            continue;
+          }
+        }
+        
+        // Ranged AI: Must reload/repair if can't shoot
+        if (classRole === 'RANGED' && currentChar.hasRangedWeapon) {
+          if (currentChar.bulletTokens === 0) {
+            // Must reload
+            const reloadResult = performReload(currentChar);
+            currentGroup[charIndex] = reloadResult.character;
+            roundLogs.push(...reloadResult.log);
+            continue;
+          } else if (currentChar.gunPoints === 0) {
+            // Gun broken - need junk to repair
+            if (currentChar.junkTokens > 0) {
+              const repairResult = performRepair(currentChar, 'GUN', Math.min(currentChar.junkTokens, 2));
+              currentGroup[charIndex] = repairResult.character;
+              roundLogs.push(...repairResult.log);
+              continue;
+            } else {
+              // No junk - draw support card for junk material if possible
+              const supportCards = [11, 13]; // Junk Material and Scrap Scan
+              const hasJunkCard = currentChar.cards.some(card => supportCards.includes(card));
+              if (hasJunkCard) {
+                const junkCard = currentChar.cards.find(card => supportCards.includes(card));
+                if (junkCard) {
+                  const cardResult = playCard(currentChar, junkCard, [...currentGroup, ...opposingGroup]);
+                  currentChar = cardResult.character;
+                  roundLogs.push(...cardResult.log);
+                  currentGroup[charIndex] = currentChar;
+                  continue;
+                }
+              }
+            }
+          }
+        }
+        
+        // Combat decision making
         const actionRoll = Math.random();
         
-        if (actionRoll < 0.8) {
-          // Attack
+        if (classRole === 'MELEE') {
+          // Melee: 85% attack, 15% defend
+          if (actionRoll < 0.85) {
+            // Attack
+            const target = selectTarget(currentChar, opposingGroup);
+            if (target) {
+              const targetIndex = opposingGroup.findIndex(c => c.id === target.id);
+              const attackResult = performMeleeAttack(currentChar, opposingGroup[targetIndex]);
+              currentGroup[charIndex] = attackResult.attacker;
+              opposingGroup[targetIndex] = attackResult.defender;
+              roundLogs.push(...attackResult.log);
+            }
+          } else {
+            // Defend
+            const defendResult = performDefend(currentChar);
+            currentGroup[charIndex] = defendResult.character;
+            roundLogs.push(...defendResult.log);
+          }
+        } else if (classRole === 'RANGED') {
+          // Ranged: Always attack if possible (already handled reload/repair above)
           const target = selectTarget(currentChar, opposingGroup);
           if (target) {
             const targetIndex = opposingGroup.findIndex(c => c.id === target.id);
             
-            // Determine attack type
-            const isRangedAttack = currentChar.hasRangedWeapon && currentChar.bulletTokens > 0 && Math.random() < 0.7;
-            
-            if (isRangedAttack) {
+            if (currentChar.hasRangedWeapon && currentChar.bulletTokens > 0 && currentChar.gunPoints > 0) {
               const attackResult = performRangedAttack(currentChar, opposingGroup[targetIndex]);
               currentGroup[charIndex] = attackResult.attacker;
               opposingGroup[targetIndex] = attackResult.defender;
               roundLogs.push(...attackResult.log);
             } else {
+              // Fallback to melee if ranged unavailable
               const attackResult = performMeleeAttack(currentChar, opposingGroup[targetIndex]);
               currentGroup[charIndex] = attackResult.attacker;
               opposingGroup[targetIndex] = attackResult.defender;
@@ -123,58 +222,43 @@ export function WarSystem({ groups, onUpdateGroups }: WarSystemProps) {
             }
           }
         } else {
-          // Other actions
-          const actionChoice = Math.random();
-          if (actionChoice < 0.4) {
-            // Defend
-            const defendResult = performDefend(currentChar);
-            currentGroup[charIndex] = defendResult.character;
-            roundLogs.push(...defendResult.log);
-          } else if (actionChoice < 0.7 && currentChar.hasRangedWeapon && currentChar.bulletTokens < 4) {
-            // Reload
-            const reloadResult = performReload(currentChar);
-            currentGroup[charIndex] = reloadResult.character;
-            roundLogs.push(...reloadResult.log);
-          } else if (currentChar.junkTokens > 0) {
-            // Repair
-            const repairTarget = Math.random() < 0.5 ? 'ARMOR' : 'GUN';
-            const tokensToUse = Math.min(currentChar.junkTokens, Math.floor(Math.random() * 3) + 1);
-            const repairResult = performRepair(currentChar, repairTarget, tokensToUse);
-            currentGroup[charIndex] = repairResult.character;
-            roundLogs.push(...repairResult.log);
+          // Support: 80% attack, 20% defend (after helping allies)
+          if (actionRoll < 0.8) {
+            const target = selectTarget(currentChar, opposingGroup);
+            if (target) {
+              const targetIndex = opposingGroup.findIndex(c => c.id === target.id);
+              
+              if (currentChar.hasRangedWeapon && currentChar.bulletTokens > 0 && currentChar.gunPoints > 0) {
+                const attackResult = performRangedAttack(currentChar, opposingGroup[targetIndex]);
+                currentGroup[charIndex] = attackResult.attacker;
+                opposingGroup[targetIndex] = attackResult.defender;
+                roundLogs.push(...attackResult.log);
+              } else {
+                const attackResult = performMeleeAttack(currentChar, opposingGroup[targetIndex]);
+                currentGroup[charIndex] = attackResult.attacker;
+                opposingGroup[targetIndex] = attackResult.defender;
+                roundLogs.push(...attackResult.log);
+              }
+            }
           } else {
-            // Default to defend
+            // Defend
             const defendResult = performDefend(currentChar);
             currentGroup[charIndex] = defendResult.character;
             roundLogs.push(...defendResult.log);
           }
         }
 
-        // Check if war is over
-        if (!isWarActive(updatedGroup1, updatedGroup2)) {
-          break;
-        }
+      // Check if war is over
+      if (!isWarActive(updatedGroup1, updatedGroup2)) {
+        endWar(updatedGroup1, updatedGroup2, group1Name, group2Name);
+        return;
       }
-
-      roundNumber++;
-      
-      // Add delay for readability
-      await new Promise(resolve => setTimeout(resolve, 100));
     }
 
-    // Determine winner
-    const group1Alive = updatedGroup1.filter(c => c.isAlive).length;
-    const group2Alive = updatedGroup2.filter(c => c.isAlive).length;
+    // Round complete - update state and pause
+    setCurrentRound(prev => prev + 1);
+    setCurrentWarState({ group1: updatedGroup1, group2: updatedGroup2, group1Name, group2Name });
     
-    if (group1Alive > group2Alive) {
-      roundLogs.push(`\n🎉 ${group1Name} WINS! (${group1Alive} survivors vs ${group2Alive})`);
-    } else if (group2Alive > group1Alive) {
-      roundLogs.push(`\n🎉 ${group2Name} WINS! (${group2Alive} survivors vs ${group1Alive})`);
-    } else {
-      roundLogs.push(`\n⚖️ DRAW! Both groups have ${group1Alive} survivors`);
-    }
-
-    // Update groups
     const newGroups = {
       ...groups,
       [group1Name]: updatedGroup1,
@@ -182,9 +266,41 @@ export function WarSystem({ groups, onUpdateGroups }: WarSystemProps) {
     };
     onUpdateGroups(newGroups);
 
-    // Update combat log
-    setCombatLog(prev => [...prev, ...roundLogs]);
+    setCombatLog(prev => [...prev, ...roundLogs, `\n--- ROUND ${currentRound} COMPLETE ---`, `Press CONTINUE to proceed to Round ${currentRound + 1}`]);
     setIsSimulating(false);
+    setIsPaused(true);
+  };
+
+  const continueWar = () => {
+    if (currentWarState) {
+      setIsSimulating(true);
+      setIsPaused(false);
+      processSingleRound(
+        currentWarState.group1,
+        currentWarState.group2,
+        currentWarState.group1Name,
+        currentWarState.group2Name
+      );
+    }
+  };
+
+  const endWar = (group1: Character[], group2: Character[], group1Name: string, group2Name: string) => {
+    const group1Alive = group1.filter(c => c.isAlive).length;
+    const group2Alive = group2.filter(c => c.isAlive).length;
+    
+    let endLogs: string[] = [];
+    if (group1Alive > group2Alive) {
+      endLogs.push(`\n🎉 ${group1Name} WINS! (${group1Alive} survivors vs ${group2Alive})`);
+    } else if (group2Alive > group1Alive) {
+      endLogs.push(`\n🎉 ${group2Name} WINS! (${group2Alive} survivors vs ${group1Alive})`);
+    } else {
+      endLogs.push(`\n⚖️ DRAW! Both groups have ${group1Alive} survivors`);
+    }
+
+    setCombatLog(prev => [...prev, ...endLogs]);
+    setIsSimulating(false);
+    setIsPaused(false);
+    setCurrentWarState(null);
   };
 
   const selectTarget = (attacker: Character, enemies: Character[]): Character | null => {
@@ -215,6 +331,9 @@ export function WarSystem({ groups, onUpdateGroups }: WarSystemProps) {
     setCombatLog([]);
     setSelectedGroups(null);
     setIsSimulating(false);
+    setIsPaused(false);
+    setCurrentRound(1);
+    setCurrentWarState(null);
   };
 
   return (
@@ -249,11 +368,22 @@ export function WarSystem({ groups, onUpdateGroups }: WarSystemProps) {
       <div className="flex gap-2 mb-4">
         <Button 
           onClick={() => groupNames.length >= 2 && startWar(groupNames[0], groupNames[1])}
-          disabled={isSimulating || groupNames.length < 2}
+          disabled={isSimulating || isPaused || groupNames.length < 2}
           className="bg-red-600 hover:bg-red-700"
         >
           {isSimulating ? 'SIMULATING...' : 'START WAR'}
         </Button>
+        
+        {isPaused && (
+          <Button 
+            onClick={continueWar}
+            disabled={isSimulating}
+            className="bg-blue-600 hover:bg-blue-700"
+          >
+            CONTINUE ROUND {currentRound}
+          </Button>
+        )}
+        
         <Button 
           onClick={resetWar}
           variant="outline"

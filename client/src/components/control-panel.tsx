@@ -41,7 +41,15 @@ export function ControlPanel({
           onClick={() => onGenerate(troopCount)}
           className="action-button bg-blue-600 hover:bg-blue-700 text-white px-6 py-2"
         >
-          GENERATE
+          GENERATE {troopCount} PROFILE{troopCount !== 1 ? 'S' : ''}
+        </Button>
+        
+        <Button 
+          onClick={onAddBlank} 
+          disabled={!activeGroup}
+          className="action-button bg-green-600 hover:bg-green-700 text-white px-6 py-2 disabled:opacity-50"
+        >
+          + CREATE BLANK PROFILE
         </Button>
         
         <Button 

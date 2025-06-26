@@ -143,6 +143,8 @@ export default function BoardingPage() {
         onSaveScenario={saveScenario}
         onLoadScenario={loadScenario}
         onResetAllCards={resetAllCards}
+        onAddBlank={addBlankProfile}
+        activeGroup={activeGroup}
       />
 
       <div className="flex gap-6">

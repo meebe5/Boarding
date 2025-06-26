@@ -104,6 +104,15 @@ Changelog:
   * Combat logging and war outcome tracking
   * Character status tracking (alive/dead, temp armor, active effects)
   * Updated character schema with new combat properties
+- June 26, 2025: Complete system overhaul:
+  * New 6-class system: Shooter, Engineer, Scavenger, Tinkerer, Brute, Breaker
+  * Class-based deck system: Melee/Ranged/Support deck access by class
+  * Updated armor values: Shooter=3, Engineer=4, Scavenger=4, Tinkerer=4, Brute=6, Breaker=5
+  * Gun points health bar visualization
+  * Alternating turn-based combat (Group 1 → Group 2 → Group 1)
+  * Round-based pausing system with continue functionality
+  * Advanced AI behavior: Melee 85% attack, Ranged prioritizes reload/repair, Support helps allies first
+  * Proper targeting rules: Melee must target enemy Melee first
 ```
 
 ## User Preferences

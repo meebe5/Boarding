@@ -63,14 +63,14 @@ const CLASS_BASE_HP = {
   6: 10  // Breaker
 };
 
-// Base Armor Plates by role
+// Base Armor Plates by class
 const CLASS_BASE_ARMOR = {
-  1: 4,  // Shooter (Ranged)
+  1: 3,  // Shooter (Ranged)
   2: 4,  // Engineer (Ranged)
   3: 4,  // Scavenger (Ranged)
-  4: 3,  // Tinkerer (Support)
+  4: 4,  // Tinkerer (Support)
   5: 6,  // Brute (Melee)
-  6: 6   // Breaker (Melee)
+  6: 5   // Breaker (Melee)
 };
 
 // Which classes have ranged weapons by default
