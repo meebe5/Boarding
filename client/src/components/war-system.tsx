@@ -140,18 +140,30 @@ export function WarSystem({ groups, onUpdateGroups }: WarSystemProps) {
         }
       }
 
-      // Check if war is over after each turn
+      // Check if war is over after each turn - but don't end immediately, save for next round check
       const g1StillAfter = updatedGroup1.filter(c => c.isAlive && c.hp > 0).length;
       const g2StillAfter = updatedGroup2.filter(c => c.isAlive && c.hp > 0).length;
       roundLogs.push(`After turn: ${group1Name} ${g1StillAfter} alive, ${group2Name} ${g2StillAfter} alive`);
-      
-      if (!isWarActive(updatedGroup1, updatedGroup2)) {
-        endWar(updatedGroup1, updatedGroup2, group1Name, group2Name);
-        return;
-      }
     }
 
-    // Round complete - update state and pause
+    // Round complete - check victory condition before continuing
+    const finalGroup1HP = updatedGroup1.filter(c => c.isAlive).reduce((sum, char) => sum + Math.max(0, char.hp), 0);
+    const finalGroup2HP = updatedGroup2.filter(c => c.isAlive).reduce((sum, char) => sum + Math.max(0, char.hp), 0);
+    
+    if (finalGroup1HP <= 0 || finalGroup2HP <= 0) {
+      // War will end at start of next round - show final logs now
+      setCombatLog(prev => [...prev, ...roundLogs, `\n--- ROUND ${currentRound} COMPLETE ---`, `One team eliminated - war will end!`]);
+      const finalGroups = {
+        ...groups,
+        [group1Name]: updatedGroup1,
+        [group2Name]: updatedGroup2
+      };
+      onUpdateGroups(finalGroups);
+      endWar(updatedGroup1, updatedGroup2, group1Name, group2Name);
+      return;
+    }
+    
+    // Continue to next round
     setCurrentRound(prev => prev + 1);
     setCurrentWarState({ group1: updatedGroup1, group2: updatedGroup2, group1Name, group2Name });
     
@@ -289,13 +301,7 @@ export function WarSystem({ groups, onUpdateGroups }: WarSystemProps) {
           updatedOpposingGroup[targetIndex] = attackResult.defender;
           roundLogs.push(...attackResult.log);
           
-          // Check for extra attack from Snap Fire (second attack has no penalty)
-          if (attackResult.attacker.tempBonuses?.extraAttack) {
-            const secondAttackResult = performRangedAttack(attackResult.attacker, attackResult.defender, true);
-            updatedCurrentGroup[charIndex] = secondAttackResult.attacker;
-            updatedOpposingGroup[targetIndex] = secondAttackResult.defender;
-            roundLogs.push(...secondAttackResult.log);
-          }
+
         } else {
           // Fallback to melee if ranged unavailable
           const attackResult = performMeleeAttack(currentChar, updatedOpposingGroup[targetIndex]);
@@ -338,13 +344,7 @@ export function WarSystem({ groups, onUpdateGroups }: WarSystemProps) {
             updatedOpposingGroup[targetIndex] = attackResult.defender;
             roundLogs.push(...attackResult.log);
             
-            // Check for extra attack from Snap Fire (second attack has no penalty)
-            if (attackResult.attacker.tempBonuses?.extraAttack) {
-              const secondAttackResult = performMeleeAttack(attackResult.attacker, attackResult.defender, true);
-              updatedCurrentGroup[charIndex] = secondAttackResult.attacker;
-              updatedOpposingGroup[targetIndex] = secondAttackResult.defender;
-              roundLogs.push(...secondAttackResult.log);
-            }
+
           }
         }
       } else {
