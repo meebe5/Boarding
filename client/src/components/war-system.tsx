@@ -500,8 +500,33 @@ export function WarSystem({ groups, onUpdateGroups }: WarSystemProps) {
           <h3 className="text-sm font-semibold text-green-400">COMBAT LOG</h3>
         </div>
         <ScrollArea className="h-80 p-3">
-          <div className="font-mono text-xs text-green-300 whitespace-pre-line">
-            {combatLog.length === 0 ? 'Waiting for combat to begin...' : combatLog.join('\n')}
+          <div className="font-mono text-xs whitespace-pre-line">
+            {combatLog.length === 0 ? (
+              <div className="text-gray-500">Waiting for combat to begin...</div>
+            ) : (
+              combatLog.map((line, index) => {
+                // Color-code different types of log entries
+                if (line.includes('ROUND') || line.includes('FINAL TALLY')) {
+                  return <div key={index} className="text-yellow-400 font-bold">{line}</div>;
+                } else if (line.includes('WINS') || line.includes('DRAW')) {
+                  return <div key={index} className="text-green-400 font-bold">{line}</div>;
+                } else if (line.includes('Initiative Order:')) {
+                  return <div key={index} className="text-blue-400 font-semibold">{line}</div>;
+                } else if (line.includes('Turn:')) {
+                  return <div key={index} className="text-cyan-400 font-semibold">{line}</div>;
+                } else if (line.includes('plays Card') || line.includes('draws from')) {
+                  return <div key={index} className="text-purple-400">{line}</div>;
+                } else if (line.includes('damage') || line.includes('takes') || line.includes('loses')) {
+                  return <div key={index} className="text-red-400">{line}</div>;
+                } else if (line.includes('attacks') || line.includes('defends') || line.includes('reloads')) {
+                  return <div key={index} className="text-orange-400">{line}</div>;
+                } else if (line.includes('defeated') || line.includes('💀')) {
+                  return <div key={index} className="text-red-500 font-bold">{line}</div>;
+                } else {
+                  return <div key={index} className="text-gray-300">{line}</div>;
+                }
+              })
+            )}
           </div>
         </ScrollArea>
       </div>
