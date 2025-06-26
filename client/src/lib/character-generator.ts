@@ -1,28 +1,28 @@
 import { v4 as uuidv4 } from 'uuid';
 import type { Character } from '@shared/schema';
 
-// Card effects mapping with deck information
+// New card effects mapping
 export const CARD_EFFECTS = {
   // RANGED CARDS (1-5)
-  1: { name: "Careful Shot", description: "Your next ranged attack ignores 1 Armor", deck: "RANGED", effect: "Bypasses 1 point of enemy armor on next ranged attack" },
-  2: { name: "Volley", description: "Roll your attack twice, choose the higher. Costs 2 Bullet Tokens", deck: "RANGED", effect: "Enhanced accuracy but uses 2 bullets instead of 1" },
-  3: { name: "Snap Fire", description: "One additional Attack immediately, but roll -1 damage (min 1)", deck: "RANGED", effect: "Grants extra attack with reduced damage" },
-  4: { name: "Take Aim", description: "+1 to your next ranged attack roll", deck: "RANGED", effect: "Improves accuracy of next ranged attack" },
-  5: { name: "Ricochet", description: "If your attack damages armor, it deals 1 HP to enemy", deck: "RANGED", effect: "Deals bonus damage when hitting armor" },
+  1: "[Careful Shot] Your next ranged attack ignores 1 Armor",
+  2: "[Volley] Roll your attack twice, choose the higher. Costs 2 Bullet Tokens",
+  3: "[Snap Fire] One additional Attack immediately, but roll -1 damage (min 1)",
+  4: "[Take Aim] +1 to your next ranged attack roll",
+  5: "[Ricochet] If your attack damages armor, it deals 1 HP to enemy",
   
   // MELEE CARDS (6-10)
-  6: { name: "Patience", description: "If you use the [DEFEND] action this turn, you gain an additional +2 [ARMOR PLATES] temporarily", deck: "MELEE", effect: "Enhances defensive stance with extra armor" },
-  7: { name: "Feint", description: "Your next melee attack ignores 1 Armor", deck: "MELEE", effect: "Bypasses 1 point of enemy armor on next melee attack" },
-  8: { name: "Overhead Strike", description: "+2 ATTACK an enemy, but if you hit their [ARMOR PLATES], you take 1 self-damage", deck: "MELEE", effect: "High damage attack with potential self-harm" },
-  9: { name: "Deadly Slice", description: "If you Damage a profiles HP, they receive -1 ATTACK on their next Action", deck: "MELEE", effect: "Debuffs enemy if HP damage is dealt" },
-  10: { name: "Parry", description: "Until your next turn, reduce all melee damage taken by 1", deck: "MELEE", effect: "Provides melee damage reduction" },
+  6: "[Patience] If you use the [DEFEND] action this turn, you gain an additional +2 [ARMOR PLATES] temporarily",
+  7: "[Feint] Your next melee attack ignores 1 Armor",
+  8: "[Overhead Strike] +2 ATTACK an enemy, but if you hit their [ARMOR PLATES], you take 1 self-damage",
+  9: "[Deadly Slice] If you Damage a profiles HP, they receive -1 ATTACK on their next Action",
+  10: "[Parry] Until your next turn, reduce all melee damage taken by 1",
   
-  // SUPPORT CARDS (11-15)
-  11: { name: "Junk Material", description: "Gain 1 Junk Material (used for gun or armor repair)", deck: "SUPPORT", effect: "Provides repair resources" },
-  12: { name: "Triage", description: "Restore 2 HP to yourself or adjacent ally", deck: "SUPPORT", effect: "Healing ability for self or allies" },
-  13: { name: "Scrap Scan", description: "Pick one: Find 1 Junk item, OR Reveal armor value of one visible enemy", deck: "SUPPORT", effect: "Utility card for resources or reconnaissance" },
-  14: { name: "Retaliation", description: "2 HP damage to the [Profile] that attacks you, lasts until the beginning of your next turn", deck: "SUPPORT", effect: "Counter-attack ability" },
-  15: { name: "Juicing", description: "Give an Ally or yourself +2 Temporary Hitpoints, that lasts until the start of your next turn", deck: "SUPPORT", effect: "Temporary HP boost for allies or self" }
+  // UTILITY CARDS (11-15)
+  11: "[Junk Material] Gain 1 Junk Material (used for gun or armor repair)",
+  12: "[Triage] Restore 2 HP to yourself or adjacent ally",
+  13: "[Scrap Scan] Pick one: Find 1 Junk item, OR Reveal armor value of one visible enemy",
+  14: "[Retaliation] 2 HP damage to the [Profile] that attacks you, lasts until the beginning of your next turn",
+  15: "[Juicing] Give an Ally or yourself +2 Temporary Hitpoints, that lasts until the start of your next turn"
 };
 
 // New class definitions

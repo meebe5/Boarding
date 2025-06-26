@@ -78,9 +78,7 @@ export function CharacterCard({ character, onUpdate }: CharacterCardProps) {
                     </TooltipTrigger>
                     <TooltipContent>
                       <p className="text-sm">
-                        {typeof CARD_EFFECTS[effect.cardId as keyof typeof CARD_EFFECTS] === 'object' 
-                          ? CARD_EFFECTS[effect.cardId as keyof typeof CARD_EFFECTS]?.description 
-                          : CARD_EFFECTS[effect.cardId as keyof typeof CARD_EFFECTS]}
+                        {CARD_EFFECTS[effect.cardId as keyof typeof CARD_EFFECTS] || 'Effect not found'}
                       </p>
                       <p className="text-xs text-gray-400">
                         From: {effect.sourceProfileName} ({effect.turnsRemaining} turns left)
@@ -278,7 +276,12 @@ export function CharacterCard({ character, onUpdate }: CharacterCardProps) {
                         <div className="flex-1">
                           <div className="font-bold text-blue-400 text-xs">CARD {cardId}</div>
                           <div className="text-gray-400 text-xs mt-1">
-                            {CARD_EFFECTS[cardId as keyof typeof CARD_EFFECTS].split(']')[0] + ']'}
+                            {(() => {
+                              const effect = CARD_EFFECTS[cardId as keyof typeof CARD_EFFECTS];
+                              if (!effect) return `Card ${cardId} - Effect Missing`;
+                              const bracketMatch = effect.match(/\[(.*?)\]/);
+                              return bracketMatch ? bracketMatch[0] : effect.substring(0, 20) + '...';
+                            })()}
                           </div>
                         </div>
                         <Button
