@@ -229,7 +229,48 @@ export function WarSystem({ groups, onUpdateGroups }: WarSystemProps) {
       }
     }
     
-    // Ranged AI: Must reload/repair if can't shoot
+    // Check for RANGED-BROKEN status effect - overrides normal AI
+    if (currentChar.statusEffects.includes('RANGED-BROKEN')) {
+      // Priority 1: Use junk materials to repair gun if available
+      if (currentChar.junkMaterials > 0) {
+        currentChar.junkMaterials--;
+        currentChar.gunPoints = 1;
+        currentChar.hasRangedWeapon = true;
+        currentChar.statusEffects = currentChar.statusEffects.filter(effect => effect !== 'RANGED-BROKEN');
+        roundLogs.push(`${currentChar.name} repairs their broken gun using junk materials! Gun restored to working condition.`);
+        updatedCurrentGroup[charIndex] = currentChar;
+        return { currentGroup: updatedCurrentGroup, opposingGroup: updatedOpposingGroup, logs: roundLogs };
+      }
+      
+      // Priority 2: Draw and play junk material cards from support deck
+      const supportCards = [11, 13]; // Junk Material and Scrap Scan
+      const hasJunkCard = currentChar.cards.some(card => supportCards.includes(card));
+      if (hasJunkCard) {
+        const junkCard = currentChar.cards.find(card => supportCards.includes(card));
+        if (junkCard) {
+          const cardResult = playCard(currentChar, junkCard, [...updatedCurrentGroup, ...updatedOpposingGroup]);
+          currentChar = cardResult.character;
+          roundLogs.push(...cardResult.log);
+          updatedCurrentGroup[charIndex] = currentChar;
+          return { currentGroup: updatedCurrentGroup, opposingGroup: updatedOpposingGroup, logs: roundLogs };
+        }
+      } else {
+        // Priority 3: Draw junk material cards from support deck
+        const junkCard = supportCards[Math.floor(Math.random() * supportCards.length)];
+        currentChar.cards.push(junkCard);
+        roundLogs.push(`${currentChar.name} (RANGED-BROKEN) draws ${CARD_EFFECTS[junkCard as keyof typeof CARD_EFFECTS]} from support deck`);
+        updatedCurrentGroup[charIndex] = currentChar;
+        return { currentGroup: updatedCurrentGroup, opposingGroup: updatedOpposingGroup, logs: roundLogs };
+      }
+      
+      // Priority 4: Fallback to defend if no repair options
+      const defendResult = performDefend(currentChar);
+      updatedCurrentGroup[charIndex] = defendResult.character;
+      roundLogs.push(...defendResult.log);
+      return { currentGroup: updatedCurrentGroup, opposingGroup: updatedOpposingGroup, logs: roundLogs };
+    }
+    
+    // Normal ranged AI: Must reload/repair if can't shoot
     if (classRole === 'RANGED' && currentChar.hasRangedWeapon) {
       if (currentChar.bulletTokens === 0) {
         // Must reload
@@ -237,28 +278,6 @@ export function WarSystem({ groups, onUpdateGroups }: WarSystemProps) {
         updatedCurrentGroup[charIndex] = reloadResult.character;
         roundLogs.push(...reloadResult.log);
         return { currentGroup: updatedCurrentGroup, opposingGroup: updatedOpposingGroup, logs: roundLogs };
-      } else if (currentChar.gunPoints === 0) {
-        // Gun broken - need junk to repair
-        if (currentChar.junkTokens > 0) {
-          const repairResult = performRepair(currentChar, 'GUN', Math.min(currentChar.junkTokens, 2));
-          updatedCurrentGroup[charIndex] = repairResult.character;
-          roundLogs.push(...repairResult.log);
-          return { currentGroup: updatedCurrentGroup, opposingGroup: updatedOpposingGroup, logs: roundLogs };
-        } else {
-          // No junk - draw support card for junk material if possible
-          const supportCards = [11, 13]; // Junk Material and Scrap Scan
-          const hasJunkCard = currentChar.cards.some(card => supportCards.includes(card));
-          if (hasJunkCard) {
-            const junkCard = currentChar.cards.find(card => supportCards.includes(card));
-            if (junkCard) {
-              const cardResult = playCard(currentChar, junkCard, [...updatedCurrentGroup, ...updatedOpposingGroup]);
-              currentChar = cardResult.character;
-              roundLogs.push(...cardResult.log);
-              updatedCurrentGroup[charIndex] = currentChar;
-              return { currentGroup: updatedCurrentGroup, opposingGroup: updatedOpposingGroup, logs: roundLogs };
-            }
-          }
-        }
       }
     }
     

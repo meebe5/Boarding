@@ -426,6 +426,11 @@ export const performReload = (character: Character): { character: Character; log
   if (updatedCharacter.gunPoints === 0) {
     updatedCharacter.hasRangedWeapon = false;
     updatedCharacter.bulletTokens = 0;
+    // Add RANGED-BROKEN status effect for ranged classes
+    const rangedClasses = [1, 2, 3]; // Shooter, Engineer, Scavenger
+    if (rangedClasses.includes(updatedCharacter.class) && !updatedCharacter.statusEffects.includes('RANGED-BROKEN')) {
+      updatedCharacter.statusEffects.push('RANGED-BROKEN');
+    }
     logs.push(`${character.name}'s gun is broken! Cannot attack with ranged weapons until repaired.`);
   }
   
@@ -471,6 +476,8 @@ export const performRepair = (
     
     if (updatedCharacter.gunPoints > 0 && !updatedCharacter.hasRangedWeapon) {
       updatedCharacter.hasRangedWeapon = true;
+      // Remove RANGED-BROKEN status effect when gun is repaired
+      updatedCharacter.statusEffects = updatedCharacter.statusEffects.filter(effect => effect !== 'RANGED-BROKEN');
       logs.push(`${character.name}'s gun is restored to working condition!`);
     }
     
