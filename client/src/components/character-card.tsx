@@ -78,7 +78,9 @@ export function CharacterCard({ character, onUpdate }: CharacterCardProps) {
                     </TooltipTrigger>
                     <TooltipContent>
                       <p className="text-sm">
-                        {CARD_EFFECTS[effect.cardId as keyof typeof CARD_EFFECTS]}
+                        {typeof CARD_EFFECTS[effect.cardId as keyof typeof CARD_EFFECTS] === 'object' 
+                          ? CARD_EFFECTS[effect.cardId as keyof typeof CARD_EFFECTS]?.description 
+                          : CARD_EFFECTS[effect.cardId as keyof typeof CARD_EFFECTS]}
                       </p>
                       <p className="text-xs text-gray-400">
                         From: {effect.sourceProfileName} ({effect.turnsRemaining} turns left)
