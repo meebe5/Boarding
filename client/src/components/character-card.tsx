@@ -298,7 +298,7 @@ export function CharacterCard({ character, onUpdate }: CharacterCardProps) {
                   <TooltipContent>
                     <p className="max-w-xs">
                       <strong>Card {cardId}:</strong><br />
-                      {CARD_EFFECTS[cardId as keyof typeof CARD_EFFECTS]}
+                      {CARD_EFFECTS[cardId as keyof typeof CARD_EFFECTS] || 'Card effect not found'}
                     </p>
                   </TooltipContent>
                 </Tooltip>
