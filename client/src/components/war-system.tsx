@@ -590,6 +590,35 @@ export function WarSystem({ groups, onUpdateGroups }: WarSystemProps) {
             </Button>
           </div>
         )}
+
+        {/* War Status - Show during simulation */}
+        {(isSimulating || isPaused) && currentWarState && (
+          <div className="grid grid-cols-2 gap-4 p-3 bg-gray-800 rounded border border-gray-600">
+            <div className="text-center">
+              <div className="text-sm font-semibold text-blue-400 mb-1">
+                {currentWarState.group1Name}
+              </div>
+              <div className="text-xs text-cyan-400">
+                HP: {currentWarState.group1.filter(c => c.isAlive).reduce((sum, char) => sum + Math.max(0, char.hp), 0)}
+              </div>
+              <div className="text-xs text-gray-400">
+                {currentWarState.group1.filter(c => c.isAlive).length} alive
+              </div>
+            </div>
+            
+            <div className="text-center">
+              <div className="text-sm font-semibold text-red-400 mb-1">
+                {currentWarState.group2Name}
+              </div>
+              <div className="text-xs text-cyan-400">
+                HP: {currentWarState.group2.filter(c => c.isAlive).reduce((sum, char) => sum + Math.max(0, char.hp), 0)}
+              </div>
+              <div className="text-xs text-gray-400">
+                {currentWarState.group2.filter(c => c.isAlive).length} alive
+              </div>
+            </div>
+          </div>
+        )}
         
         {/* Action Buttons */}
         <div className="flex gap-2 flex-wrap">
