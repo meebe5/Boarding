@@ -203,22 +203,8 @@
   /* Mobile bottom navigation safe area */
   @media (max-width: 768px) {
     .mobile-safe-bottom {
-      padding-bottom: max(2rem, env(safe-area-inset-bottom));
+      padding-bottom: 2rem;
       margin-bottom: 2rem;
-    }
-    
-    /* Ensure all input fields have proper contrast */
-    input[type="number"], 
-    input[type="text"], 
-    select {
-      background-color: #374151 !important;
-      color: #f3f4f6 !important;
-      border-color: #6b7280 !important;
-    }
-    
-    /* Fix white text visibility */
-    .text-white {
-      color: #f9fafb !important;
     }
   }
   
