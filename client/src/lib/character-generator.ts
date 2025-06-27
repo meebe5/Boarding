@@ -47,7 +47,7 @@ export const CLASS_ROLES = {
 export const CLASS_ROLE_TYPE = {
   1: "RANGED",  // Shooter
   2: "RANGED",  // Engineer
-  3: "RANGED",  // Scavenger
+  3: "SUPPORT", // Scavenger - draws from SUPPORT deck for junk tokens
   4: "SUPPORT", // Tinkerer
   5: "MELEE",   // Brute
   6: "MELEE"    // Breaker
@@ -119,7 +119,7 @@ export const generateProfile = (): Character => {
     activeEffects: [],
     isAlive: true,
     lastDamageType: 'none',
-    meleeDamageDice: '1d6',
+    meleeDamageDice: hasRanged ? '1d4' : '1d6', // Ranged weapon users have 1d4 melee damage
     rangedDamageDice: '1d4',
   };
 };
@@ -138,7 +138,11 @@ export const updateCharacterClass = (character: Character, newClass: number): Ch
     maxArmorPlates: newArmor,
     hasRangedWeapon: hasRanged,
     bulletTokens: hasRanged ? 4 : 0,
+    maxBulletTokens: 4,
     gunPoints: hasRanged ? 4 : 0,
+    maxGunPoints: 4,
+    meleeDamageDice: hasRanged ? '1d4' : '1d6', // Update melee damage dice based on ranged weapon
+    rangedDamageDice: '1d4',
     isAlive: newHp > 0,
   };
 };
@@ -190,12 +194,16 @@ export const createBlankProfile = (): Character => {
     maxArmorPlates: 2,
     tempArmorPlates: 0,
     bulletTokens: 4,
+    maxBulletTokens: 4,
     gunPoints: 4,
+    maxGunPoints: 4,
     junkTokens: 0,
     hasRangedWeapon: true,
     cards: [],
     activeEffects: [],
     isAlive: true,
     lastDamageType: 'none',
+    meleeDamageDice: '1d4', // Default ranged class gets 1d4 melee
+    rangedDamageDice: '1d4',
   };
 };

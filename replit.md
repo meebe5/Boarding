@@ -113,6 +113,11 @@ Changelog:
   * Round-based pausing system with continue functionality
   * Advanced AI behavior: Melee 85% attack, Ranged prioritizes reload/repair, Support helps allies first
   * Proper targeting rules: Melee must target enemy Melee first
+- June 27, 2025: Combat system fixes and improvements:
+  * Fixed single damage roll system - removed duplicate attack/damage rolls
+  * Ranged weapon users and ranged classes now use 1d4 melee damage dice
+  * Scavenger class now draws from SUPPORT deck for junk token acquisition
+  * Updated combat logs to show single roll determining hit and damage
 ```
 
 ## User Preferences
