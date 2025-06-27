@@ -6,22 +6,22 @@ export const CARD_EFFECTS = {
   // RANGED CARDS (1-5)
   1: "[Careful Shot] Your next ranged attack ignores 1 Armor",
   2: "[Volley] Roll your attack twice, choose the higher. Costs 2 Bullet Tokens",
-  3: "[Snap Fire] Uses 2 BULLET POINTS. Make an additional attack with -2 DAMAGE",
+  3: "[Snap Fire] Uses 2 BULLET POINTS. Make an additional attack with -2 ATTACK",
   4: "[Take Aim] +1 to your next ranged attack roll",
   5: "[Ricochet] If you cause an enemy to lose 1 AP [ARMOR PLATE], they lose 1 HP as well",
   
   // MELEE CARDS (6-10)
   6: "[Patience] If you use the [DEFEND] action this turn, you gain an additional +2 [ARMOR PLATES] temporarily",
   7: "[Feint] Your next melee attack ignores 1 Armor",
-  8: "[Overhead Strike] +2 DAMAGE to an enemy, but if you hit their [ARMOR PLATES], you take 1 self-damage",
-  9: "[Deadly Slice] If you Damage a profiles HP, they receive -1 ATTACK on their next Action",
-  10: "[Parry] Until your next turn, reduce all melee damage taken by 1",
+  8: "[Overhead Strike] +2 ATTACK to an enemy, but if you hit their [ARMOR PLATES], you take 1 self-damage",
+  9: "[Deadly Slice] If you attack a profiles HP, they receive -1 ATTACK on their next Action",
+  10: "[Parry] Until your next turn, reduce all melee attacks taken by 1",
   
   // UTILITY CARDS (11-15)
-  11: "[Junk Material] Gain 1 Junk Material (used for gun or armor repair)",
+  11: "[Junk Tokens] Gain 1 Junk Token (used for gun or armor repair)",
   12: "[Triage] Restore 2 HP to yourself or adjacent ally",
   13: "[Scrap Scan] Pick one: Find 1 Junk item, OR Reveal armor value of one visible enemy",
-  14: "[Retaliation] 2 HP damage to the [Profile] that attacks you, lasts until the beginning of your next turn",
+  14: "[Retaliation] 2 HP attack to the [Profile] that attacks you, lasts until the beginning of your next turn",
   15: "[Juicing] Give an Ally or yourself +2 Temporary Hitpoints, that lasts until the start of your next turn"
 };
 

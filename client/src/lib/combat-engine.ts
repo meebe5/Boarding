@@ -205,9 +205,9 @@ export const playCard = (
       });
       break;
       
-    case 11: // Junk Material
+    case 11: // Junk Tokens
       updatedCharacter.junkTokens += 1;
-      logs.push(`${character.name} gains 1 Junk Material (${updatedCharacter.junkTokens} total)`);
+      logs.push(`${character.name} gains 1 Junk Token (${updatedCharacter.junkTokens} total)`);
       break;
       
     case 12: // Triage - Restore 2 HP
@@ -225,7 +225,7 @@ export const playCard = (
       
     case 13: // Scrap Scan
       updatedCharacter.junkTokens += 1;
-      logs.push(`${character.name} finds 1 Junk Material (${updatedCharacter.junkTokens} total)`);
+      logs.push(`${character.name} finds 1 Junk Token (${updatedCharacter.junkTokens} total)`);
       break;
       
     case 14: // Retaliation
@@ -367,22 +367,20 @@ export const performRangedAttack = (
   
   logs.push(`vs ${defender.name}'s armor: ${effectiveArmor} (${totalArmor}${ignoreArmor ? ' -1 from Careful Shot' : ''})`);
   
-  // Resolve damage
+  // Resolve attack
   if (finalDamageRoll >= effectiveArmor) {
-    // Full damage to HP
-    const damage = finalDamageRoll;
-    
-    const actualDamage = Math.min(damage, updatedDefender.tempHp + updatedDefender.hp);
+    // Full attack damage to HP
+    const attackDamage = finalDamageRoll;
     
     if (updatedDefender.tempHp > 0) {
-      const tempDamage = Math.min(damage, updatedDefender.tempHp);
+      const tempDamage = Math.min(attackDamage, updatedDefender.tempHp);
       updatedDefender.tempHp -= tempDamage;
-      const remainingDamage = damage - tempDamage;
+      const remainingDamage = attackDamage - tempDamage;
       updatedDefender.hp = Math.max(0, updatedDefender.hp - remainingDamage);
-      logs.push(`${defender.name} takes ${damage} damage (${tempDamage} to temp HP, ${remainingDamage} to HP)`);
+      logs.push(`${defender.name} takes ${attackDamage} attack damage (${tempDamage} to temp HP, ${remainingDamage} to HP)`);
     } else {
-      updatedDefender.hp = Math.max(0, updatedDefender.hp - damage);
-      logs.push(`${defender.name} takes ${damage} damage to HP`);
+      updatedDefender.hp = Math.max(0, updatedDefender.hp - attackDamage);
+      logs.push(`${defender.name} takes ${attackDamage} attack damage to HP`);
     }
     
     updatedDefender.isAlive = updatedDefender.hp > 0;
