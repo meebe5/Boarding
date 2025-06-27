@@ -2,7 +2,6 @@ import { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Badge } from '@/components/ui/badge';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import type { Character } from '@shared/schema';
 import { drawCardsForClass, CARD_EFFECTS, CLASS_ROLE_TYPE } from '@/lib/character-generator';
 import { startTurn, playCard, performRangedAttack, performMeleeAttack, performDefend, performReload, performRepair } from '@/lib/combat-engine';
@@ -24,22 +23,19 @@ export function WarSystem({ groups, onUpdateGroups }: WarSystemProps) {
     group1Name: string;
     group2Name: string;
   } | null>(null);
-  const [selectedGroup1, setSelectedGroup1] = useState<string>("");
-  const [selectedGroup2, setSelectedGroup2] = useState<string>("");
 
   const groupNames = Object.keys(groups);
   
-  const startWar = () => {
-    if (!selectedGroup1 || !selectedGroup2 || selectedGroup1 === selectedGroup2) return;
-    if (!groups[selectedGroup1] || !groups[selectedGroup2]) return;
+  const startWar = (group1Name: string, group2Name: string) => {
+    if (!groups[group1Name] || !groups[group2Name]) return;
     
-    setSelectedGroups([selectedGroup1, selectedGroup2]);
-    setCombatLog([`=== WAR BEGINS: ${selectedGroup1} vs ${selectedGroup2} ===`]);
+    setSelectedGroups([group1Name, group2Name]);
+    setCombatLog([`=== WAR BEGINS: ${group1Name} vs ${group2Name} ===`]);
     setIsSimulating(true);
     setCurrentRound(1);
     
     // Start first round
-    simulateRound(groups[selectedGroup1], groups[selectedGroup2], selectedGroup1, selectedGroup2);
+    simulateRound(groups[group1Name], groups[group2Name], group1Name, group2Name);
   };
 
   const simulateRound = async (group1: Character[], group2: Character[], group1Name: string, group2Name: string) => {
@@ -517,8 +513,6 @@ export function WarSystem({ groups, onUpdateGroups }: WarSystemProps) {
     setIsPaused(false);
     setCurrentRound(1);
     setCurrentWarState(null);
-    setSelectedGroup1("");
-    setSelectedGroup2("");
   };
 
   return (
@@ -527,81 +521,39 @@ export function WarSystem({ groups, onUpdateGroups }: WarSystemProps) {
         ⚔️ WAR SIMULATION SYSTEM
       </h2>
 
-      {/* Group Selection - Dropdown selectors */}
+      {/* Group Selection - Compact on mobile */}
       <div className="mb-3 md:mb-4 flex-shrink-0">
         <h3 className="text-sm font-semibold text-gray-300 mb-2">SELECT OPPOSING GROUPS</h3>
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-2 md:gap-4">
-          {/* Group 1 Selector */}
-          <div className="space-y-2">
-            <label className="text-xs text-gray-400">Group 1:</label>
-            <Select value={selectedGroup1} onValueChange={setSelectedGroup1}>
-              <SelectTrigger className="bg-gray-800 border-gray-600 text-white">
-                <SelectValue placeholder="Select first group" />
-              </SelectTrigger>
-              <SelectContent>
-                {groupNames.map((groupName) => (
-                  <SelectItem key={groupName} value={groupName}>
-                    {groupName} ({groups[groupName]?.filter(c => c.isAlive).length || 0} alive)
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-            {selectedGroup1 && (
-              <div className="bg-gray-800 rounded p-2 border border-gray-600">
-                <div className="font-bold text-blue-400 mb-1 text-sm">{selectedGroup1}</div>
-                <div className="text-xs text-gray-300">
-                  Total HP: {groups[selectedGroup1]?.filter(c => c.isAlive).reduce((sum, char) => sum + Math.max(0, char.hp), 0) || 0}
+        <div className="grid grid-cols-2 gap-2 md:gap-4">
+          {groupNames.slice(0, 2).map((groupName, index) => (
+            <div key={groupName} className="bg-gray-800 rounded p-2 md:p-3 border border-gray-600">
+              <div className="font-bold text-blue-400 mb-1 md:mb-2 text-sm md:text-base">{groupName}</div>
+              <div className="text-xs text-gray-300">
+                Total HP: {groups[groupName]?.filter(c => c.isAlive).reduce((sum, char) => sum + Math.max(0, char.hp), 0) || 0}
+              </div>
+              {/* Mobile: Show only count, Desktop: Show names */}
+              <div className="mt-1 md:mt-2">
+                <div className="block md:hidden text-xs text-gray-400">
+                  {groups[groupName]?.filter(c => c.isAlive).length || 0} combatants
                 </div>
-                <div className="mt-1 flex flex-wrap gap-1">
-                  {groups[selectedGroup1]?.filter(c => c.isAlive).map(char => (
+                <div className="hidden md:flex flex-wrap gap-1">
+                  {groups[groupName]?.filter(c => c.isAlive).map(char => (
                     <Badge key={char.id} variant="secondary" className="text-xs">
                       {char.name.split(' ')[0]}
                     </Badge>
                   ))}
                 </div>
               </div>
-            )}
-          </div>
-
-          {/* Group 2 Selector */}
-          <div className="space-y-2">
-            <label className="text-xs text-gray-400">Group 2:</label>
-            <Select value={selectedGroup2} onValueChange={setSelectedGroup2}>
-              <SelectTrigger className="bg-gray-800 border-gray-600 text-white">
-                <SelectValue placeholder="Select second group" />
-              </SelectTrigger>
-              <SelectContent>
-                {groupNames.filter(name => name !== selectedGroup1).map((groupName) => (
-                  <SelectItem key={groupName} value={groupName}>
-                    {groupName} ({groups[groupName]?.filter(c => c.isAlive).length || 0} alive)
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-            {selectedGroup2 && (
-              <div className="bg-gray-800 rounded p-2 border border-gray-600">
-                <div className="font-bold text-red-400 mb-1 text-sm">{selectedGroup2}</div>
-                <div className="text-xs text-gray-300">
-                  Total HP: {groups[selectedGroup2]?.filter(c => c.isAlive).reduce((sum, char) => sum + Math.max(0, char.hp), 0) || 0}
-                </div>
-                <div className="mt-1 flex flex-wrap gap-1">
-                  {groups[selectedGroup2]?.filter(c => c.isAlive).map(char => (
-                    <Badge key={char.id} variant="secondary" className="text-xs">
-                      {char.name.split(' ')[0]}
-                    </Badge>
-                  ))}
-                </div>
-              </div>
-            )}
-          </div>
+            </div>
+          ))}
         </div>
       </div>
 
       {/* War Controls */}
       <div className="flex gap-2 mb-3 md:mb-4 flex-shrink-0 flex-wrap">
         <Button 
-          onClick={startWar}
-          disabled={isSimulating || isPaused || !selectedGroup1 || !selectedGroup2 || selectedGroup1 === selectedGroup2}
+          onClick={() => groupNames.length >= 2 && startWar(groupNames[0], groupNames[1])}
+          disabled={isSimulating || isPaused || groupNames.length < 2}
           className="bg-red-600 hover:bg-red-700 text-sm md:text-base"
         >
           {isSimulating ? 'SIMULATING...' : 'START WAR'}
