@@ -17,6 +17,7 @@ export default function BoardingPage() {
   const [activeGroup, setActiveGroup] = useState<string | null>(null);
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [warSystemOpen, setWarSystemOpen] = useState(false);
+  const [combatLog, setCombatLog] = useState<string[]>([]);
   const isMobile = useIsMobile();
 
   const handleGenerate = (troopCount: number) => {
@@ -253,6 +254,8 @@ export default function BoardingPage() {
             <WarSystem 
               groups={migratedGroups} 
               onUpdateGroups={setGroups}
+              combatLog={combatLog}
+              onCombatLogUpdate={setCombatLog}
             />
           </SheetContent>
         </Sheet>
@@ -262,6 +265,8 @@ export default function BoardingPage() {
           <WarSystem 
             groups={migratedGroups} 
             onUpdateGroups={setGroups}
+            combatLog={combatLog}
+            onCombatLogUpdate={setCombatLog}
           />
         </div>
       )}

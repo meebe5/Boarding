@@ -10,10 +10,11 @@ import { startTurn, playCard, performRangedAttack, performMeleeAttack, performDe
 interface WarSystemProps {
   groups: Record<string, Character[]>;
   onUpdateGroups: (groups: Record<string, Character[]>) => void;
+  combatLog: string[];
+  onCombatLogUpdate: (log: string[]) => void;
 }
 
-export function WarSystem({ groups, onUpdateGroups }: WarSystemProps) {
-  const [combatLog, setCombatLog] = useState<string[]>([]);
+export function WarSystem({ groups, onUpdateGroups, combatLog, onCombatLogUpdate }: WarSystemProps) {
   const [isSimulating, setIsSimulating] = useState(false);
   const [isPaused, setIsPaused] = useState(false);
   const [selectedGroups, setSelectedGroups] = useState<[string, string] | null>(null);
@@ -33,7 +34,7 @@ export function WarSystem({ groups, onUpdateGroups }: WarSystemProps) {
     if (!groups[group1Name] || !groups[group2Name]) return;
     
     setSelectedGroups([group1Name, group2Name]);
-    setCombatLog([`=== WAR BEGINS: ${group1Name} vs ${group2Name} ===`]);
+    onCombatLogUpdate([`=== WAR BEGINS: ${group1Name} vs ${group2Name} ===`]);
     setIsSimulating(true);
     setCurrentRound(1);
     
@@ -56,7 +57,7 @@ export function WarSystem({ groups, onUpdateGroups }: WarSystemProps) {
     // Check if war should end at start of round (one team has 0 HP)
     if (!isWarActive(group1, group2)) {
       roundLogs.push(`War ends - one team has no remaining HP`);
-      setCombatLog(prev => [...prev, ...roundLogs]);
+      onCombatLogUpdate([...combatLog, ...roundLogs]);
       endWar(group1, group2, group1Name, group2Name);
       return;
     }
@@ -159,12 +160,13 @@ export function WarSystem({ groups, onUpdateGroups }: WarSystemProps) {
     }
 
     // Always update combat log with this round's actions first
-    setCombatLog(prev => [...prev, ...roundLogs]);
+    onCombatLogUpdate([...combatLog, ...roundLogs]);
     
     // Log alive/dead status at the END of the round
     const g1StillAlive = updatedGroup1.filter(c => c.isAlive && c.hp > 0).length;
     const g2StillAlive = updatedGroup2.filter(c => c.isAlive && c.hp > 0).length;
-    setCombatLog(prev => [...prev, `End of Round ${currentRound}: ${group1Name} ${g1StillAlive} alive, ${group2Name} ${g2StillAlive} alive`]);
+    const updatedLog = [...combatLog, ...roundLogs, `End of Round ${currentRound}: ${group1Name} ${g1StillAlive} alive, ${group2Name} ${g2StillAlive} alive`];
+    onCombatLogUpdate(updatedLog);
     
     // Check if war should end after this round is complete
     if (!isWarActive(updatedGroup1, updatedGroup2)) {
@@ -183,7 +185,8 @@ export function WarSystem({ groups, onUpdateGroups }: WarSystemProps) {
     };
     onUpdateGroups(newGroups);
 
-    setCombatLog(prev => [...prev, `\n--- ROUND ${currentRound} COMPLETE ---`, `Press CONTINUE to proceed to Round ${currentRound + 1}`]);
+    const finalLog = [...updatedLog, `\n--- ROUND ${currentRound} COMPLETE ---`, `Press CONTINUE to proceed to Round ${currentRound + 1}`];
+    onCombatLogUpdate(finalLog);
     setIsSimulating(false);
     setIsPaused(true);
   };
@@ -498,7 +501,7 @@ export function WarSystem({ groups, onUpdateGroups }: WarSystemProps) {
       endLogs.push(`\n⚖️ DRAW! Both groups eliminated`);
     }
 
-    setCombatLog(prev => [...prev, ...endLogs]);
+    onCombatLogUpdate([...combatLog, ...endLogs]);
     setIsSimulating(false);
     setIsPaused(false);
     setCurrentWarState(null);
@@ -539,7 +542,7 @@ export function WarSystem({ groups, onUpdateGroups }: WarSystemProps) {
   };
 
   const resetWar = () => {
-    setCombatLog([]);
+    onCombatLogUpdate([]);
     setSelectedGroups(null);
     setSelectedGroup1('');
     setSelectedGroup2('');
