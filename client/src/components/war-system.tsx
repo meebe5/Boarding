@@ -64,16 +64,23 @@ export function WarSystem({ groups, onUpdateGroups }: WarSystemProps) {
     let updatedGroup1 = [...group1];
     let updatedGroup2 = [...group2];
       
-    // Start of turn: draw cards for all living characters
+    // Start of round: only draw cards and reset temp values (no effect expiration logging yet)
     updatedGroup1 = updatedGroup1.map(character => {
       if (!character.isAlive) return character;
       
-      const turnResult = startTurn(character);
-      roundLogs.push(...turnResult.log);
+      // Clear expired effects without logging (will log during character's turn)
+      const activeEffects = character.activeEffects.filter(effect => effect.turnsRemaining > 0)
+        .map(effect => ({ ...effect, turnsRemaining: effect.turnsRemaining - 1 }));
       
-      // Draw cards based on class
+      // Reset temporary values and draw cards
       const drawnCards = drawCardsForClass(character.class);
-      const updatedChar = { ...turnResult.character, cards: drawnCards };
+      const updatedChar = { 
+        ...character, 
+        tempHp: 0, 
+        tempArmorPlates: 0, 
+        activeEffects,
+        cards: drawnCards 
+      };
       roundLogs.push(`${character.name} draws from ${CLASS_ROLE_TYPE[character.class as keyof typeof CLASS_ROLE_TYPE]} deck: Cards ${drawnCards.join(', ')}`);
       
       return updatedChar;
@@ -82,12 +89,19 @@ export function WarSystem({ groups, onUpdateGroups }: WarSystemProps) {
     updatedGroup2 = updatedGroup2.map(character => {
       if (!character.isAlive) return character;
       
-      const turnResult = startTurn(character);
-      roundLogs.push(...turnResult.log);
+      // Clear expired effects without logging (will log during character's turn)
+      const activeEffects = character.activeEffects.filter(effect => effect.turnsRemaining > 0)
+        .map(effect => ({ ...effect, turnsRemaining: effect.turnsRemaining - 1 }));
       
-      // Draw cards based on class
+      // Reset temporary values and draw cards
       const drawnCards = drawCardsForClass(character.class);
-      const updatedChar = { ...turnResult.character, cards: drawnCards };
+      const updatedChar = { 
+        ...character, 
+        tempHp: 0, 
+        tempArmorPlates: 0, 
+        activeEffects,
+        cards: drawnCards 
+      };
       roundLogs.push(`${character.name} draws from ${CLASS_ROLE_TYPE[character.class as keyof typeof CLASS_ROLE_TYPE]} deck: Cards ${drawnCards.join(', ')}`);
       
       return updatedChar;
@@ -197,6 +211,12 @@ export function WarSystem({ groups, onUpdateGroups }: WarSystemProps) {
     let roundLogs = [...logs];
     
     roundLogs.push(`\n${currentChar.name}'s Turn:`);
+    
+    // Log expired effects at the start of this character's turn
+    const expiredEffects = currentChar.activeEffects.filter(effect => effect.turnsRemaining <= 0);
+    expiredEffects.forEach(effect => {
+      roundLogs.push(`${currentChar.name}: ${CARD_EFFECTS[effect.cardId as keyof typeof CARD_EFFECTS]} expires`);
+    });
 
     // Play a random card if available
     if (currentChar.cards.length > 0) {
