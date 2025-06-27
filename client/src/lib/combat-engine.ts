@@ -81,9 +81,28 @@ export const playCard = (
   logs.push(`${character.name} plays ${CARD_EFFECTS[cardId as keyof typeof CARD_EFFECTS]}`);
   
   switch (cardId) {
-    case 2: // Volley - Costs 2 Bullet Tokens
+    case 1: // Careful Shot - Ignore 1 armor on next ranged attack
+      updatedCharacter.activeEffects.push({
+        cardId: 1,
+        sourceProfileId: character.id,
+        sourceProfileName: character.name,
+        turnsRemaining: 1,
+        effectType: 'other',
+        value: 1
+      });
+      break;
+      
+    case 2: // Volley - Costs 2 Bullet Tokens, roll twice choose higher
       if (updatedCharacter.bulletTokens >= 2) {
         updatedCharacter.bulletTokens -= 2;
+        updatedCharacter.activeEffects.push({
+          cardId: 2,
+          sourceProfileId: character.id,
+          sourceProfileName: character.name,
+          turnsRemaining: 1,
+          effectType: 'other',
+          value: 1
+        });
         logs.push(`${character.name} spends 2 bullet tokens for Volley effect`);
       } else {
         logs.push(`${character.name} lacks bullet tokens for Volley!`);
@@ -91,14 +110,99 @@ export const playCard = (
       }
       break;
       
-    case 3: // Snap Fire - Costs 2 Bullet Tokens
+    case 3: // Snap Fire - Costs 2 Bullet Tokens, make additional attack
       if (updatedCharacter.bulletTokens >= 2) {
         updatedCharacter.bulletTokens -= 2;
+        updatedCharacter.activeEffects.push({
+          cardId: 3,
+          sourceProfileId: character.id,
+          sourceProfileName: character.name,
+          turnsRemaining: 1,
+          effectType: 'other',
+          value: 1
+        });
         logs.push(`${character.name} spends 2 bullet tokens for Snap Fire - will make two attacks this turn!`);
       } else {
         logs.push(`${character.name} lacks bullet tokens for Snap Fire!`);
         return { character: updatedCharacter, log: logs };
       }
+      break;
+      
+    case 4: // Take Aim - +1 to next ranged attack
+      updatedCharacter.activeEffects.push({
+        cardId: 4,
+        sourceProfileId: character.id,
+        sourceProfileName: character.name,
+        turnsRemaining: 1,
+        effectType: 'attack_bonus',
+        value: 1
+      });
+      break;
+      
+    case 5: // Ricochet - Extra damage when armor plates lost
+      updatedCharacter.activeEffects.push({
+        cardId: 5,
+        sourceProfileId: character.id,
+        sourceProfileName: character.name,
+        turnsRemaining: 1,
+        effectType: 'other',
+        value: 1
+      });
+      break;
+      
+    case 6: // Patience - +2 temp armor if defending
+      updatedCharacter.activeEffects.push({
+        cardId: 6,
+        sourceProfileId: character.id,
+        sourceProfileName: character.name,
+        turnsRemaining: 1,
+        effectType: 'temporary_armor',
+        value: 2
+      });
+      break;
+      
+    case 7: // Feint - Next melee attack ignores 1 armor
+      updatedCharacter.activeEffects.push({
+        cardId: 7,
+        sourceProfileId: character.id,
+        sourceProfileName: character.name,
+        turnsRemaining: 1,
+        effectType: 'other',
+        value: 1
+      });
+      break;
+      
+    case 8: // Overhead Strike - +2 damage, self-damage if hit armor
+      updatedCharacter.activeEffects.push({
+        cardId: 8,
+        sourceProfileId: character.id,
+        sourceProfileName: character.name,
+        turnsRemaining: 1,
+        effectType: 'other',
+        value: 2
+      });
+      break;
+      
+    case 9: // Deadly Slice - Target gets -1 attack if HP damaged
+      updatedCharacter.activeEffects.push({
+        cardId: 9,
+        sourceProfileId: character.id,
+        sourceProfileName: character.name,
+        turnsRemaining: 1,
+        effectType: 'other',
+        value: -1
+      });
+      break;
+      
+    case 10: // Parry - Reduce melee damage by 1 until next turn
+      updatedCharacter.activeEffects.push({
+        cardId: 10,
+        sourceProfileId: character.id,
+        sourceProfileName: character.name,
+        turnsRemaining: 1,
+        effectType: 'damage_reduction',
+        value: 1
+      });
       break;
       
     case 11: // Junk Material
@@ -225,26 +329,34 @@ export const performRangedAttack = (
   // Roll damage dice (this is the single roll that determines both hit and damage)
   let damageRoll = rollDice(attacker.rangedDamageDice || '1d4');
   const damageModifier = getDamageModifiers(attacker, 'ranged');
-  let finalDamageRoll = damageRoll + damageModifier;
+  
+  // Apply Take Aim +1 bonus
+  const hasTakeAim = attacker.activeEffects.some(e => e.cardId === 4);
+  const takeAimBonus = hasTakeAim ? 1 : 0;
+  
+  let finalDamageRoll = damageRoll + damageModifier + takeAimBonus;
   
   // Check for Volley effect (roll twice, take higher)
   const hasVolley = updatedAttacker.activeEffects.some(e => e.cardId === 2);
   if (hasVolley && !isSnapFireSecondAttack) {
-    const roll1 = rollDice(attacker.rangedDamageDice || '1d4') + damageModifier;
-    const roll2 = rollDice(attacker.rangedDamageDice || '1d4') + damageModifier;
+    const roll1 = rollDice(attacker.rangedDamageDice || '1d4') + damageModifier + takeAimBonus;
+    const roll2 = rollDice(attacker.rangedDamageDice || '1d4') + damageModifier + takeAimBonus;
     finalDamageRoll = Math.max(roll1, roll2);
-    logs.push(`${attacker.name} uses Volley! Roll 1: ${roll1}, Roll 2: ${roll2}, choosing higher: ${finalDamageRoll}`);
+    logs.push(`${attacker.name} uses Volley! Attack roll 1: ${roll1}, Attack roll 2: ${roll2}, choosing higher: ${finalDamageRoll}`);
   } else {
     // Apply Snap Fire penalty to second attack
     if (isSnapFireSecondAttack) {
       finalDamageRoll = Math.max(1, finalDamageRoll - 2); // -2 penalty for second snap fire attack
       logs.push(`${attacker.name} second Snap Fire damage roll (with -2 penalty): ${finalDamageRoll}`);
     } else {
+      let damageBreakdown = `${attacker.rangedDamageDice || '1d4'}`;
       if (damageModifier > 0) {
-        logs.push(`${attacker.name} ranged damage roll: ${finalDamageRoll} (${attacker.rangedDamageDice || '1d4'} + ${damageModifier} from ${getClassName(attacker.class)})`);
-      } else {
-        logs.push(`${attacker.name} ranged damage roll: ${finalDamageRoll} (${attacker.rangedDamageDice || '1d4'})`);
+        damageBreakdown += ` + ${damageModifier} from ${getClassName(attacker.class)}`;
       }
+      if (takeAimBonus > 0) {
+        damageBreakdown += ` + ${takeAimBonus} from Take Aim`;
+      }
+      logs.push(`${attacker.name} ranged damage roll: ${finalDamageRoll} (${damageBreakdown})`);
     }
   }
   
@@ -327,18 +439,26 @@ export const performMeleeAttack = (
   // Roll damage dice (this is the single roll that determines both hit and damage)
   let damageRoll = rollDice(attacker.meleeDamageDice || '1d6');
   const damageModifier = getDamageModifiers(attacker, 'melee');
-  const finalDamageRoll = damageRoll + damageModifier;
+  
+  // Apply Overhead Strike +2 damage bonus
+  const hasOverheadStrike = attacker.activeEffects.some(e => e.cardId === 8);
+  const overheadBonus = hasOverheadStrike ? 2 : 0;
+  
+  const finalDamageRoll = damageRoll + damageModifier + overheadBonus;
   
   // Check armor
   const totalArmor = defender.armorPlates + defender.tempArmorPlates;
   const ignoreArmor = attacker.activeEffects.some(e => e.cardId === 7); // Feint
   const effectiveArmor = ignoreArmor ? Math.max(0, totalArmor - 1) : totalArmor;
   
+  let damageBreakdown = `${attacker.meleeDamageDice || '1d6'}`;
   if (damageModifier > 0) {
-    logs.push(`${attacker.name} melee damage roll: ${finalDamageRoll} (${attacker.meleeDamageDice || '1d6'} + ${damageModifier} from ${getClassName(attacker.class)})`);
-  } else {
-    logs.push(`${attacker.name} melee damage roll: ${finalDamageRoll} (${attacker.meleeDamageDice || '1d6'})`);
+    damageBreakdown += ` + ${damageModifier} from ${getClassName(attacker.class)}`;
   }
+  if (overheadBonus > 0) {
+    damageBreakdown += ` + ${overheadBonus} from Overhead Strike`;
+  }
+  logs.push(`${attacker.name} melee damage roll: ${finalDamageRoll} (${damageBreakdown})`);
   
   logs.push(`vs ${defender.name}'s armor: ${effectiveArmor} (${totalArmor}${ignoreArmor ? ' -1 from Feint' : ''})`);
   

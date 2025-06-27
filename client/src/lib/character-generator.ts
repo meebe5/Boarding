@@ -6,14 +6,14 @@ export const CARD_EFFECTS = {
   // RANGED CARDS (1-5)
   1: "[Careful Shot] Your next ranged attack ignores 1 Armor",
   2: "[Volley] Roll your attack twice, choose the higher. Costs 2 Bullet Tokens",
-  3: "[Snap Fire] Uses 2 BULLET POINTS. Make an additional attack with -2 ATTACK",
+  3: "[Snap Fire] Uses 2 BULLET POINTS. Make an additional attack with -2 DAMAGE",
   4: "[Take Aim] +1 to your next ranged attack roll",
   5: "[Ricochet] If you cause an enemy to lose 1 AP [ARMOR PLATE], they lose 1 HP as well",
   
   // MELEE CARDS (6-10)
   6: "[Patience] If you use the [DEFEND] action this turn, you gain an additional +2 [ARMOR PLATES] temporarily",
   7: "[Feint] Your next melee attack ignores 1 Armor",
-  8: "[Overhead Strike] +2 ATTACK an enemy, but if you hit their [ARMOR PLATES], you take 1 self-damage",
+  8: "[Overhead Strike] +2 DAMAGE to an enemy, but if you hit their [ARMOR PLATES], you take 1 self-damage",
   9: "[Deadly Slice] If you Damage a profiles HP, they receive -1 ATTACK on their next Action",
   10: "[Parry] Until your next turn, reduce all melee damage taken by 1",
   
