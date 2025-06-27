@@ -129,18 +129,18 @@ export const simulateAttack = (
     logs.push(`${defender.name}'s armor reduced by 2 from armor breach effect (${defenderArmor} → ${effectiveArmor})`);
   }
   
-  logs.push(`${attacker.name} attacks ${defender.name} (attack roll: ${damageRoll} vs ${effectiveArmor} armor)`);
+  logs.push(`${attacker.name} attacks ${defender.name} (damage roll: ${damageRoll} vs ${effectiveArmor} armor)`);
   
   let updatedAttacker = { ...attacker };
   let updatedDefender = { ...defender };
   
   // Meets or beats armor = hit
   if (damageRoll >= effectiveArmor) {
-    // Full attack to HP
-    const finalAttack = damageRoll;
+    // Full damage to HP
+    const finalDamage = damageRoll;
     
     const oldDefenderHp = updatedDefender.hp;
-    updatedDefender.hp = Math.max(0, updatedDefender.hp - finalAttack);
+    updatedDefender.hp = Math.max(0, updatedDefender.hp - finalDamage);
     updatedDefender.isAlive = updatedDefender.hp > 0;
     
     // Handle card 5 effect (stay at 1 HP if you hit 0) - only if card was used this turn
@@ -150,7 +150,7 @@ export const simulateAttack = (
       logs.push(`${defender.name} stays at 1 HP due to defensive anchor!`);
     }
     
-    logs.push(`${defender.name} takes ${finalAttack} attack damage (${oldDefenderHp} → ${updatedDefender.hp}/${updatedDefender.maxHp} HP)`);
+    logs.push(`${defender.name} takes ${finalDamage} damage (${oldDefenderHp} → ${updatedDefender.hp}/${updatedDefender.maxHp} HP)`);
     
     if (updatedDefender.hp === 0) {
       logs.push(`💀 ${defender.name} has been defeated!`);
@@ -161,7 +161,7 @@ export const simulateAttack = (
       const oldAttackerHp = updatedAttacker.hp;
       updatedAttacker.hp = Math.max(0, updatedAttacker.hp - 2);
       updatedAttacker.isAlive = updatedAttacker.hp > 0;
-      logs.push(`${attacker.name} takes 2 thorns attack from ${defender.name}! (${oldAttackerHp} → ${updatedAttacker.hp}/${updatedAttacker.maxHp} HP)`);
+      logs.push(`${attacker.name} takes 2 thorns damage from ${defender.name}! (${oldAttackerHp} → ${updatedAttacker.hp}/${updatedAttacker.maxHp} HP)`);
       
       if (updatedAttacker.hp === 0) {
         logs.push(`💀 ${attacker.name} has been defeated by thorns!`);
