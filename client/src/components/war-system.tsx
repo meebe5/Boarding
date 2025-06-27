@@ -117,11 +117,7 @@ export function WarSystem({ groups, onUpdateGroups }: WarSystemProps) {
         }
       }
 
-      // Check if war is over
-      if (!isWarActive(updatedGroup1, updatedGroup2)) {
-        endWar(updatedGroup1, updatedGroup2, group1Name, group2Name);
-        return;
-      }
+
 
       // Group 2 turn
       if (i < group2Alive.length) {
