@@ -28,7 +28,7 @@ export function ControlPanel({
       <div className="space-y-4 md:space-y-0 md:flex md:flex-wrap md:gap-4 md:items-center">
         {/* Troop count input - full width on mobile */}
         <div className="flex items-center justify-between md:justify-start gap-3">
-          <label className="text-gray-400 text-xs md:text-sm uppercase tracking-wide flex-shrink-0">
+          <label className="text-gray-300 text-xs md:text-sm uppercase tracking-wide flex-shrink-0">
             TROOP COUNT:
           </label>
           <Input
@@ -37,7 +37,7 @@ export function ControlPanel({
             max="100"
             value={troopCount}
             onChange={(e) => setTroopCount(Number(e.target.value))}
-            className="tactical-input w-16 md:w-20 text-center focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm md:text-base"
+            className="tactical-input w-16 md:w-20 text-center focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm md:text-base text-white bg-gray-700 border-gray-600"
           />
         </div>
         

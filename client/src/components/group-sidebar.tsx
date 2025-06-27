@@ -60,16 +60,16 @@ export function GroupSidebar({ groups, activeGroup, onGroupSelect, onGroupDelete
         {/* Mobile stats overview */}
         <div className="grid grid-cols-3 gap-2 mb-4 text-xs">
           <div className="text-center p-2 bg-gray-700 rounded">
-            <div className="text-blue-400 font-mono">{getTotalUnits()}</div>
-            <div className="text-gray-400">TOTAL</div>
+            <div className="text-blue-400 font-mono font-bold">{getTotalUnits()}</div>
+            <div className="text-gray-300">TOTAL</div>
           </div>
           <div className="text-center p-2 bg-gray-700 rounded">
-            <div className="text-green-400 font-mono">{getCombatReady()}</div>
-            <div className="text-gray-400">READY</div>
+            <div className="text-green-400 font-mono font-bold">{getCombatReady()}</div>
+            <div className="text-gray-300">READY</div>
           </div>
           <div className="text-center p-2 bg-gray-700 rounded">
-            <div className="text-red-400 font-mono">{getInjured()}</div>
-            <div className="text-gray-400">INJURED</div>
+            <div className="text-red-400 font-mono font-bold">{getInjured()}</div>
+            <div className="text-gray-300">INJURED</div>
           </div>
         </div>
       </div>

@@ -124,7 +124,7 @@ export function CharacterCard({ character, onUpdate }: CharacterCardProps) {
             <label className="text-xs text-gray-400 uppercase block mb-1">TIER</label>
             <div className="flex gap-1 items-center">
               <span className="text-orange-500 text-lg">⭐</span>
-              <span className="text-white font-mono">{character.tier}</span>
+              <span className="text-gray-200 font-mono">{character.tier}</span>
             </div>
           </div>
         </div>
@@ -202,15 +202,15 @@ export function CharacterCard({ character, onUpdate }: CharacterCardProps) {
 
           <div>
             <label className="text-xs text-gray-400 uppercase block mb-1">JUNK TOKENS</label>
-            <div className="flex gap-1 items-center">
-              <Wrench className="w-4 h-4 text-orange-500" />
+            <div className="flex gap-1 items-center justify-between md:justify-start">
               <Input
                 type="number"
                 value={character.junkTokens}
                 onChange={(e) => handleUpdate({ junkTokens: Math.max(0, parseInt(e.target.value) || 0) })}
-                className="w-16 h-6 text-xs text-center bg-gray-800 border-gray-600"
+                className="w-16 h-6 text-xs text-center bg-gray-800 border-gray-600 text-white"
                 min="0"
               />
+              <Wrench className="w-4 h-4 text-orange-500" />
             </div>
           </div>
         </div>

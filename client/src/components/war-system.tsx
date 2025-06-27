@@ -505,7 +505,7 @@ export function WarSystem({ groups, onUpdateGroups }: WarSystemProps) {
   };
 
   return (
-    <div className="war-system bg-gray-900 border border-gray-700 rounded-lg p-6">
+    <div className="war-system bg-gray-900 border border-gray-700 rounded-lg p-6 mobile-safe-bottom">
       <h2 className="text-xl font-bold text-white mb-4 flex items-center gap-2">
         ⚔️ WAR SIMULATION SYSTEM
       </h2>
@@ -562,7 +562,7 @@ export function WarSystem({ groups, onUpdateGroups }: WarSystemProps) {
       </div>
 
       {/* Combat Log */}
-      <div className="bg-black rounded border border-gray-600 h-96">
+      <div className="bg-black rounded border border-gray-600 h-96 md:mb-0 mb-20">
         <div className="p-3 border-b border-gray-600">
           <h3 className="text-sm font-semibold text-green-400">COMBAT LOG</h3>
         </div>
