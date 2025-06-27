@@ -136,19 +136,32 @@ export const simulateDefend = (character: Character): { character: Character; lo
   return { character: updatedCharacter, log: logs };
 };
 
-// Process turn end effects
-export const processTurnEnd = (character: Character): Character => {
-  // Reduce active effect durations
-  const updatedEffects = character.activeEffects
-    .map(effect => ({ ...effect, turnsRemaining: effect.turnsRemaining - 1 }))
-    .filter(effect => effect.turnsRemaining > 0);
+// Process turn start - clear expired effects and reset temporary values
+export const processTurnStart = (character: Character): { character: Character; log: string[] } => {
+  const logs: string[] = [];
   
-  // Reset temporary armor at start of next turn
-  // Reset temporary armor at turn end
+  // Clear effects that have expired (turnsRemaining <= 0)
+  const expiredEffects = character.activeEffects.filter(effect => effect.turnsRemaining <= 0);
+  const activeEffects = character.activeEffects.filter(effect => effect.turnsRemaining > 0);
+  
+  // Log expired effects
+  expiredEffects.forEach(effect => {
+    logs.push(`${character.name}: ${CARD_EFFECTS[effect.cardId as keyof typeof CARD_EFFECTS]} expires`);
+  });
+  
+  // Decrement remaining turn counters for active effects
+  const updatedEffects = activeEffects.map(effect => ({ 
+    ...effect, 
+    turnsRemaining: effect.turnsRemaining - 1 
+  }));
+  
   return {
-    ...character,
-    tempArmorPlates: 0,
-    activeEffects: updatedEffects,
+    character: {
+      ...character,
+      tempArmorPlates: 0,
+      activeEffects: updatedEffects,
+    },
+    log: logs
   };
 };
 
@@ -207,7 +220,9 @@ export const simulateWarRound = (
     const currentChar = currentGroup[currentCharIndex];
     
     // Process turn start - clear expired effects from PREVIOUS turn
-    currentGroup[currentCharIndex] = processTurnEnd(currentChar);
+    const turnStartResult = processTurnStart(currentChar);
+    currentGroup[currentCharIndex] = turnStartResult.character;
+    combatLogs.push(...turnStartResult.log);
     const refreshedChar = currentGroup[currentCharIndex];
     
     combatLogs.push(`--- ${refreshedChar.name}'s Turn ---`);
