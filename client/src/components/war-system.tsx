@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Badge } from '@/components/ui/badge';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import type { Character } from '@shared/schema';
 import { drawCardsForClass, CARD_EFFECTS, CLASS_ROLE_TYPE } from '@/lib/character-generator';
 import { startTurn, playCard, performRangedAttack, performMeleeAttack, performDefend, performReload, performRepair } from '@/lib/combat-engine';
@@ -16,6 +17,8 @@ export function WarSystem({ groups, onUpdateGroups }: WarSystemProps) {
   const [isSimulating, setIsSimulating] = useState(false);
   const [isPaused, setIsPaused] = useState(false);
   const [selectedGroups, setSelectedGroups] = useState<[string, string] | null>(null);
+  const [selectedGroup1, setSelectedGroup1] = useState<string>('');
+  const [selectedGroup2, setSelectedGroup2] = useState<string>('');
   const [currentRound, setCurrentRound] = useState(1);
   const [currentWarState, setCurrentWarState] = useState<{
     group1: Character[];
@@ -509,10 +512,18 @@ export function WarSystem({ groups, onUpdateGroups }: WarSystemProps) {
   const resetWar = () => {
     setCombatLog([]);
     setSelectedGroups(null);
+    setSelectedGroup1('');
+    setSelectedGroup2('');
     setIsSimulating(false);
     setIsPaused(false);
     setCurrentRound(1);
     setCurrentWarState(null);
+  };
+
+  const canStartWar = () => {
+    return selectedGroup1 && selectedGroup2 && selectedGroup1 !== selectedGroup2 && 
+           groups[selectedGroup1] && groups[selectedGroup2] && 
+           groups[selectedGroup1].length > 0 && groups[selectedGroup2].length > 0;
   };
 
   return (
@@ -521,61 +532,84 @@ export function WarSystem({ groups, onUpdateGroups }: WarSystemProps) {
         ⚔️ WAR SIMULATION SYSTEM
       </h2>
 
-      {/* Group Selection - Compact on mobile */}
-      <div className="mb-3 md:mb-4 flex-shrink-0">
-        <h3 className="text-sm font-semibold text-gray-300 mb-2">SELECT OPPOSING GROUPS</h3>
-        <div className="grid grid-cols-2 gap-2 md:gap-4">
-          {groupNames.slice(0, 2).map((groupName, index) => (
-            <div key={groupName} className="bg-gray-800 rounded p-2 md:p-3 border border-gray-600">
-              <div className="font-bold text-blue-400 mb-1 md:mb-2 text-sm md:text-base">{groupName}</div>
-              <div className="text-xs text-gray-300">
-                Total HP: {groups[groupName]?.filter(c => c.isAlive).reduce((sum, char) => sum + Math.max(0, char.hp), 0) || 0}
-              </div>
-              {/* Mobile: Show only count, Desktop: Show names */}
-              <div className="mt-1 md:mt-2">
-                <div className="block md:hidden text-xs text-gray-400">
-                  {groups[groupName]?.filter(c => c.isAlive).length || 0} combatants
-                </div>
-                <div className="hidden md:flex flex-wrap gap-1">
-                  {groups[groupName]?.filter(c => c.isAlive).map(char => (
-                    <Badge key={char.id} variant="secondary" className="text-xs">
-                      {char.name.split(' ')[0]}
-                    </Badge>
-                  ))}
-                </div>
-              </div>
-            </div>
-          ))}
-        </div>
-      </div>
+
 
       {/* War Controls */}
-      <div className="flex gap-2 mb-3 md:mb-4 flex-shrink-0 flex-wrap">
-        <Button 
-          onClick={() => groupNames.length >= 2 && startWar(groupNames[0], groupNames[1])}
-          disabled={isSimulating || isPaused || groupNames.length < 2}
-          className="bg-red-600 hover:bg-red-700 text-sm md:text-base"
-        >
-          {isSimulating ? 'SIMULATING...' : 'START WAR'}
-        </Button>
-        
-        {isPaused && (
-          <Button 
-            onClick={continueWar}
-            disabled={isSimulating}
-            className="bg-blue-600 hover:bg-blue-700 text-sm md:text-base"
-          >
-            CONTINUE ROUND {currentRound}
-          </Button>
+      <div className="space-y-3 mb-3 md:mb-4 flex-shrink-0">
+        {/* Group Selection */}
+        {!isSimulating && !isPaused && (
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-2 items-end">
+            <div>
+              <label className="text-xs text-gray-400 mb-1 block">Group 1</label>
+              <Select value={selectedGroup1} onValueChange={setSelectedGroup1}>
+                <SelectTrigger className="h-9 text-sm">
+                  <SelectValue placeholder="Select first group" />
+                </SelectTrigger>
+                <SelectContent>
+                  {groupNames.map(groupName => (
+                    <SelectItem key={groupName} value={groupName}>
+                      {groupName} ({groups[groupName]?.length || 0})
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+            
+            <div>
+              <label className="text-xs text-gray-400 mb-1 block">Group 2</label>
+              <Select value={selectedGroup2} onValueChange={setSelectedGroup2}>
+                <SelectTrigger className="h-9 text-sm">
+                  <SelectValue placeholder="Select second group" />
+                </SelectTrigger>
+                <SelectContent>
+                  {groupNames.filter(name => name !== selectedGroup1).map(groupName => (
+                    <SelectItem key={groupName} value={groupName}>
+                      {groupName} ({groups[groupName]?.length || 0})
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+
+            <Button 
+              onClick={() => canStartWar() && startWar(selectedGroup1, selectedGroup2)}
+              disabled={!canStartWar()}
+              className="bg-red-600 hover:bg-red-700 text-sm h-9"
+            >
+              START WAR
+            </Button>
+          </div>
         )}
         
-        <Button 
-          onClick={resetWar}
-          variant="outline"
-          className="border-gray-600 text-sm md:text-base"
-        >
-          RESET
-        </Button>
+        {/* Action Buttons */}
+        <div className="flex gap-2 flex-wrap">
+          {isSimulating && (
+            <Button 
+              disabled
+              className="bg-red-600 text-sm md:text-base"
+            >
+              SIMULATING...
+            </Button>
+          )}
+        
+          {isPaused && (
+            <Button 
+              onClick={continueWar}
+              disabled={isSimulating}
+              className="bg-blue-600 hover:bg-blue-700 text-sm md:text-base"
+            >
+              CONTINUE ROUND {currentRound}
+            </Button>
+          )}
+          
+          <Button 
+            onClick={resetWar}
+            variant="outline"
+            className="border-gray-600 text-sm md:text-base"
+          >
+            RESET
+          </Button>
+        </div>
       </div>
 
       {/* Combat Log - Takes remaining space */}
