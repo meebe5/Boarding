@@ -259,8 +259,8 @@ export function WarSystem({ groups, onUpdateGroups }: WarSystemProps) {
       // Perform the repair if target found
       if (repairTarget && repairType) {
         const tokensToUse = Math.min(currentChar.junkTokens, 2);
-        const repairResult = performRepair(currentChar, repairType, tokensToUse);
-        updatedCurrentGroup[charIndex] = repairResult.character;
+        // Update character's junk tokens directly without using performRepair to avoid duplicate logs
+        updatedCurrentGroup[charIndex].junkTokens -= tokensToUse;
         
         // Update the ally's stats
         const allyIndex = updatedCurrentGroup.findIndex(c => c.id === repairTarget.id);
@@ -271,6 +271,11 @@ export function WarSystem({ groups, onUpdateGroups }: WarSystemProps) {
             const repairAmount = tokensToUse * (currentChar.class === 3 ? 2 : 1); // Scavenger doubles gun repair
             const maxRepair = (updatedCurrentGroup[allyIndex].maxGunPoints || 4) - currentGunPoints;
             const actualRepair = Math.min(repairAmount, maxRepair);
+            
+            // Add class efficiency message
+            if (currentChar.class === 3) {
+              roundLogs.push(`Scavenger doubles gun repair efficiency`);
+            }
             
             updatedCurrentGroup[allyIndex].gunPoints = Math.min(
               updatedCurrentGroup[allyIndex].gunPoints + repairAmount,
@@ -291,6 +296,11 @@ export function WarSystem({ groups, onUpdateGroups }: WarSystemProps) {
             const maxRepair = updatedCurrentGroup[allyIndex].maxArmorPlates - currentArmorPlates;
             const actualRepair = Math.min(repairAmount, maxRepair);
             
+            // Add class efficiency message
+            if (currentChar.class === 4) {
+              roundLogs.push(`Tinkerer doubles armor repair efficiency`);
+            }
+            
             updatedCurrentGroup[allyIndex].armorPlates = Math.min(
               updatedCurrentGroup[allyIndex].armorPlates + repairAmount,
               updatedCurrentGroup[allyIndex].maxArmorPlates
@@ -299,7 +309,6 @@ export function WarSystem({ groups, onUpdateGroups }: WarSystemProps) {
           }
         }
         
-        roundLogs.push(...repairResult.log);
         return { currentGroup: updatedCurrentGroup, opposingGroup: updatedOpposingGroup, logs: roundLogs };
       }
     }

@@ -461,7 +461,13 @@ export const performMeleeAttack = (
   // Resolve damage
   if (finalDamageRoll >= effectiveArmor) {
     // Full damage to HP
-    const damage = finalDamageRoll;
+    let damage = finalDamageRoll;
+    
+    // Apply Parry damage reduction (-1 melee damage)
+    if (updatedDefender.activeEffects.some(e => e.cardId === 10)) {
+      damage = Math.max(0, damage - 1);
+      logs.push(`${defender.name}'s Parry reduces damage by 1 (${finalDamageRoll} → ${damage})`);
+    }
     
     // Apply damage
     if (updatedDefender.tempHp > 0) {
