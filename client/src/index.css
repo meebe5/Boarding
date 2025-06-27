@@ -134,4 +134,63 @@
     border-color: var(--tactical-primary);
     box-shadow: 0 0 0 3px hsl(207, 90%, 54%, 0.1);
   }
+  
+  /* Mobile-first responsive improvements */
+  @media (max-width: 768px) {
+    .character-card {
+      margin-bottom: 1rem;
+    }
+    
+    /* Improve touch targets */
+    button, input, select, textarea {
+      min-height: 44px;
+    }
+    
+    /* Better scrolling on mobile */
+    .overflow-x-auto {
+      -webkit-overflow-scrolling: touch;
+      scrollbar-width: none;
+      -ms-overflow-style: none;
+    }
+    
+    .overflow-x-auto::-webkit-scrollbar {
+      display: none;
+    }
+    
+    /* Reduce font sizes slightly on mobile */
+    .text-4xl {
+      font-size: 2rem;
+    }
+    
+    .text-3xl {
+      font-size: 1.5rem;
+    }
+  }
+  
+  /* Touch-friendly interactions */
+  .touch-manipulation {
+    touch-action: manipulation;
+    -webkit-user-select: none;
+    -moz-user-select: none;
+    -ms-user-select: none;
+    user-select: none;
+  }
+  
+  /* PWA display improvements */
+  @media (display-mode: standalone) {
+    body {
+      padding-top: env(safe-area-inset-top);
+      padding-bottom: env(safe-area-inset-bottom);
+    }
+    
+    .sticky {
+      top: env(safe-area-inset-top);
+    }
+  }
+  
+  /* Improved button states for mobile */
+  .action-button:active {
+    transform: translateY(0);
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+  }
 }

@@ -45,16 +45,16 @@ export function CharacterCard({ character, onUpdate }: CharacterCardProps) {
 
   return (
     <TooltipProvider>
-      <div className={`character-card rounded-lg p-5 relative ${!character.isAlive ? 'opacity-50 bg-red-900/20' : ''}`}>
+      <div className={`character-card rounded-lg p-4 md:p-5 relative ${!character.isAlive ? 'opacity-50 bg-red-900/20' : ''}`}>
         {/* Character Header */}
         <div className="flex justify-between items-start mb-4">
-          <div className="flex-1">
+          <div className="flex-1 min-w-0">
             <Input
               value={character.name}
               onChange={(e) => handleUpdate({ name: e.target.value })}
-              className="bg-transparent text-lg font-semibold border-b border-transparent hover:border-blue-500 focus:border-blue-500 focus:outline-none w-full"
+              className="bg-transparent text-base md:text-lg font-semibold border-b border-transparent hover:border-blue-500 focus:border-blue-500 focus:outline-none w-full touch-manipulation"
             />
-            <div className="text-xs text-gray-400 mt-1 uppercase tracking-wide">
+            <div className="text-xs text-gray-400 mt-1 uppercase tracking-wide truncate">
               OPERATIVE ID: <span>{character.id.substring(0, 8).toUpperCase()}</span>
             </div>
           </div>
