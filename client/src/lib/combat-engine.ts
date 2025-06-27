@@ -639,6 +639,7 @@ export const performRepair = (
     updatedCharacter.armorPlates += actualRepair;
     logs.push(`${character.name} repairs ${actualRepair} armor plates using ${junkTokensUsed} junk tokens`);
   } else if (target === 'GUN') {
+    const wasGunBroken = updatedCharacter.gunPoints === 0;
     const maxRepair = (updatedCharacter.maxGunPoints || 4) - updatedCharacter.gunPoints;
     const actualRepair = Math.min(repairAmount, maxRepair);
     updatedCharacter.gunPoints += actualRepair;
@@ -646,6 +647,12 @@ export const performRepair = (
     if (updatedCharacter.gunPoints > 0 && !updatedCharacter.hasRangedWeapon) {
       updatedCharacter.hasRangedWeapon = true;
       logs.push(`${character.name}'s gun is restored to working condition!`);
+    }
+    
+    // If gun was completely broken (0 points) and is now repaired, restore max bullets
+    if (wasGunBroken && updatedCharacter.gunPoints > 0) {
+      updatedCharacter.bulletTokens = updatedCharacter.maxBulletTokens || 4;
+      logs.push(`${character.name} receives full bullet count (${updatedCharacter.bulletTokens}) with repaired gun!`);
     }
     
     logs.push(`${character.name} repairs ${actualRepair} gun points using ${junkTokensUsed} junk tokens`);

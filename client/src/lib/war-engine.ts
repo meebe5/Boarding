@@ -335,12 +335,18 @@ export const simulateWarRound = (
         const allyIndex = currentGroup.findIndex(c => c.id === repairDecision.target!.id);
         if (allyIndex !== -1) {
           if (repairDecision.repairType === 'GUN') {
+            const wasGunBroken = currentGroup[allyIndex].gunPoints === 0;
             currentGroup[allyIndex].gunPoints = Math.min(
               currentGroup[allyIndex].gunPoints + junkToUse * (currentGroup[currentCharIndex].class === 3 ? 2 : 1),
               currentGroup[allyIndex].maxGunPoints || 4
             );
             if (currentGroup[allyIndex].gunPoints > 0) {
               currentGroup[allyIndex].hasRangedWeapon = true;
+              // If gun was completely broken and is now repaired, restore max bullets
+              if (wasGunBroken) {
+                currentGroup[allyIndex].bulletTokens = currentGroup[allyIndex].maxBulletTokens || 4;
+                combatLogs.push(`${repairDecision.target!.name} receives full bullet count with repaired gun!`);
+              }
             }
           } else if (repairDecision.repairType === 'ARMOR') {
             currentGroup[allyIndex].armorPlates = Math.min(

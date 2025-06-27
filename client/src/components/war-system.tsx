@@ -261,6 +261,7 @@ export function WarSystem({ groups, onUpdateGroups }: WarSystemProps) {
         const allyIndex = updatedCurrentGroup.findIndex(c => c.id === repairTarget.id);
         if (allyIndex !== -1) {
           if (repairType === 'GUN') {
+            const wasGunBroken = updatedCurrentGroup[allyIndex].gunPoints === 0;
             const repairAmount = tokensToUse * (currentChar.class === 3 ? 2 : 1); // Scavenger doubles gun repair
             updatedCurrentGroup[allyIndex].gunPoints = Math.min(
               updatedCurrentGroup[allyIndex].gunPoints + repairAmount,
@@ -268,6 +269,11 @@ export function WarSystem({ groups, onUpdateGroups }: WarSystemProps) {
             );
             if (updatedCurrentGroup[allyIndex].gunPoints > 0) {
               updatedCurrentGroup[allyIndex].hasRangedWeapon = true;
+              // If gun was completely broken and is now repaired, restore max bullets
+              if (wasGunBroken) {
+                updatedCurrentGroup[allyIndex].bulletTokens = updatedCurrentGroup[allyIndex].maxBulletTokens || 4;
+                roundLogs.push(`${repairTarget.name} receives full bullet count with repaired gun!`);
+              }
             }
           } else if (repairType === 'ARMOR') {
             const repairAmount = tokensToUse * (currentChar.class === 4 ? 2 : 1); // Tinkerer doubles armor repair
