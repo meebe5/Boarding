@@ -1,6 +1,6 @@
 import type { Character, WarState, WarParticipant, ActiveEffect } from '@shared/schema';
 import { CARD_EFFECTS } from './character-generator';
-import { shouldPerformRepairs, needsJunkTokens, isJunkTokenCard, performRepair } from './combat-engine';
+import { shouldPerformRepairs, needsJunkTokens, isJunkTokenCard, performRepair, playCard } from './combat-engine';
 
 // Dice rolling functions
 export const rollD6 = (): number => Math.floor(Math.random() * 6) + 1;
@@ -45,68 +45,15 @@ export const getCardModifiers = (character: Character, action: 'attack' | 'damag
   return modifier;
 };
 
-// Apply card effects
+// Apply card effects - use combat engine for proper implementation
 export const applyCardEffect = (
   character: Character,
   cardId: number,
   allCharacters: Character[],
   targetId?: string
 ): { character: Character; log: string[] } => {
-  const logs: string[] = [];
-  let updatedCharacter = { ...character };
-
-  switch (cardId) {
-    case 1: // +2 Heal [if damaged] to you or another player
-      const healTarget = targetId ? allCharacters.find(c => c.id === targetId) : character;
-      if (healTarget && healTarget.hp < healTarget.maxHp) {
-        const healAmount = Math.min(2, healTarget.maxHp - healTarget.hp);
-        const oldHp = healTarget.hp;
-        if (healTarget.id === character.id) {
-          updatedCharacter.hp += healAmount;
-          logs.push(`${character.name} heals self for ${healAmount} HP (${oldHp} → ${updatedCharacter.hp}/${updatedCharacter.maxHp})`);
-        } else {
-          logs.push(`${character.name} heals ${healTarget.name} for ${healAmount} HP (${oldHp} → ${oldHp + healAmount}/${healTarget.maxHp})`);
-        }
-      } else {
-        logs.push(`${character.name} tries to heal but target is at full health`);
-      }
-      break;
-    
-    case 5: // Enemies focus on you; stay at 1 HP if you hit 0
-      logs.push(`${character.name} becomes a defensive anchor - will stay at 1 HP if reduced to 0`);
-      break;
-    
-    case 7: // +3 Armor to ally
-      if (targetId) {
-        const ally = allCharacters.find(c => c.id === targetId);
-        if (ally) {
-          logs.push(`${character.name} grants +3 Armor to ${ally.name} until next turn`);
-        }
-      } else {
-        logs.push(`${character.name} prepares to grant +3 Armor to an ally`);
-      }
-      break;
-    
-    case 8: // Enemy that attacks you takes 2 damage
-      logs.push(`${character.name} activates thorns - attackers will take 2 damage`);
-      break;
-    
-    case 10: // Reduce enemy Armor by -2 until next turn
-      logs.push(`${character.name} prepares armor breach - enemy armor will be reduced by 2`);
-      break;
-    
-    case 11: // Junk Tokens - Gain 1 junk token
-      updatedCharacter.junkTokens += 1;
-      logs.push(`${character.name} gains 1 junk token from Junk Tokens`);
-      break;
-    
-    case 13: // Scrap Scan - Gain 1 junk token
-      updatedCharacter.junkTokens += 1;
-      logs.push(`${character.name} gains 1 junk token from Scrap Scan`);
-      break;
-  }
-
-  return { character: updatedCharacter, log: logs };
+  // Use the combat engine's proper card implementation
+  return playCard(character, cardId, allCharacters, targetId);
 };
 
 // Simulate a single attack
@@ -288,8 +235,10 @@ export const simulateWarRound = (
     if (shouldPlayJunkCard && junkCardToPlay) {
       cardToPlay = junkCardToPlay;
     } else {
+      // Only allow cards that aren't currently active (except junk token cards which are instant)
       const availableCards = refreshedChar.cards.filter(card => 
-        !refreshedChar.activeEffects.some(e => e.cardId === card)
+        !refreshedChar.activeEffects.some(e => e.cardId === card && e.sourceProfileId === refreshedChar.id) ||
+        isJunkTokenCard(card)
       );
       if (availableCards.length > 0) {
         cardToPlay = availableCards[Math.floor(Math.random() * availableCards.length)];
@@ -300,20 +249,40 @@ export const simulateWarRound = (
       // Log card usage
       combatLogs.push(`${refreshedChar.name} plays Card ${cardToPlay}: ${CARD_EFFECTS[cardToPlay as keyof typeof CARD_EFFECTS]}`);
       
-      const cardEffect = applyCardEffect(refreshedChar, cardToPlay, allCharacters);
+      // IMPORTANT: Clear all existing active effects before applying new card
+      // This enforces the rule that only one card can be active at a time
+      let characterWithClearedEffects = {
+        ...refreshedChar,
+        activeEffects: refreshedChar.activeEffects.filter(effect => 
+          // Keep only junk token effects (they're instant) and effects from other sources
+          isJunkTokenCard(effect.cardId) || effect.sourceProfileId !== refreshedChar.id
+        )
+      };
+      
+      const cardEffect = applyCardEffect(characterWithClearedEffects, cardToPlay, allCharacters);
       combatLogs.push(...cardEffect.log);
       currentGroup[currentCharIndex] = cardEffect.character;
       
       // If this was a junk token card, allow playing another card
       if (isJunkTokenCard(cardToPlay)) {
-        const remainingCards = refreshedChar.cards.filter(card => 
-          card !== cardToPlay && !refreshedChar.activeEffects.some(e => e.cardId === card)
+        const remainingCards = currentGroup[currentCharIndex].cards.filter(card => 
+          card !== cardToPlay && 
+          (!currentGroup[currentCharIndex].activeEffects.some(e => e.cardId === card && e.sourceProfileId === currentGroup[currentCharIndex].id) ||
+           isJunkTokenCard(card))
         );
         if (remainingCards.length > 0) {
           const secondCard = remainingCards[Math.floor(Math.random() * remainingCards.length)];
-          combatLogs.push(`${refreshedChar.name} plays second card ${secondCard}: ${CARD_EFFECTS[secondCard as keyof typeof CARD_EFFECTS]}`);
+          combatLogs.push(`${currentGroup[currentCharIndex].name} plays second card ${secondCard}: ${CARD_EFFECTS[secondCard as keyof typeof CARD_EFFECTS]}`);
           
-          const secondCardEffect = applyCardEffect(currentGroup[currentCharIndex], secondCard, allCharacters);
+          // Clear existing active effects before applying second card too
+          let characterWithClearedEffectsSecond = {
+            ...currentGroup[currentCharIndex],
+            activeEffects: currentGroup[currentCharIndex].activeEffects.filter(effect => 
+              isJunkTokenCard(effect.cardId) || effect.sourceProfileId !== currentGroup[currentCharIndex].id
+            )
+          };
+          
+          const secondCardEffect = applyCardEffect(characterWithClearedEffectsSecond, secondCard, allCharacters);
           combatLogs.push(...secondCardEffect.log);
           currentGroup[currentCharIndex] = secondCardEffect.character;
         }
