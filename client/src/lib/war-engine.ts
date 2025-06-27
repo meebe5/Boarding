@@ -304,8 +304,13 @@ export const simulateWarRound = (
         if (allyIndex !== -1) {
           if (repairDecision.repairType === 'GUN') {
             const wasGunBroken = currentGroup[allyIndex].gunPoints === 0;
+            const currentGunPoints = currentGroup[allyIndex].gunPoints;
+            const repairAmount = junkToUse * (currentGroup[currentCharIndex].class === 3 ? 2 : 1);
+            const maxRepair = (currentGroup[allyIndex].maxGunPoints || 4) - currentGunPoints;
+            const actualRepair = Math.min(repairAmount, maxRepair);
+            
             currentGroup[allyIndex].gunPoints = Math.min(
-              currentGroup[allyIndex].gunPoints + junkToUse * (currentGroup[currentCharIndex].class === 3 ? 2 : 1),
+              currentGroup[allyIndex].gunPoints + repairAmount,
               currentGroup[allyIndex].maxGunPoints || 4
             );
             if (currentGroup[allyIndex].gunPoints > 0) {
@@ -315,13 +320,19 @@ export const simulateWarRound = (
                 combatLogs.push(`${repairDecision.target!.name} receives full bullet count with repaired gun!`);
               }
             }
+            combatLogs.push(`${repairDecision.target.name} receives ${actualRepair} gun point repair from ${currentGroup[currentCharIndex].name} using ${junkToUse} junk tokens`);
           } else if (repairDecision.repairType === 'ARMOR') {
+            const currentArmorPlates = currentGroup[allyIndex].armorPlates;
+            const repairAmount = junkToUse * (currentGroup[currentCharIndex].class === 4 ? 2 : 1);
+            const maxRepair = currentGroup[allyIndex].maxArmorPlates - currentArmorPlates;
+            const actualRepair = Math.min(repairAmount, maxRepair);
+            
             currentGroup[allyIndex].armorPlates = Math.min(
-              currentGroup[allyIndex].armorPlates + junkToUse * (currentGroup[currentCharIndex].class === 4 ? 2 : 1),
+              currentGroup[allyIndex].armorPlates + repairAmount,
               currentGroup[allyIndex].maxArmorPlates
             );
+            combatLogs.push(`${repairDecision.target.name} receives ${actualRepair} armor plate repair from ${currentGroup[currentCharIndex].name} using ${junkToUse} junk tokens`);
           }
-          combatLogs.push(`${repairDecision.target.name} receives repair from ${currentGroup[currentCharIndex].name}`);
         }
       }
     } else {

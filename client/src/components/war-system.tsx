@@ -138,14 +138,16 @@ export function WarSystem({ groups, onUpdateGroups }: WarSystemProps) {
         }
       }
 
-      // Log status after each turn but don't end war mid-round
-      const g1StillAfter = updatedGroup1.filter(c => c.isAlive && c.hp > 0).length;
-      const g2StillAfter = updatedGroup2.filter(c => c.isAlive && c.hp > 0).length;
-      roundLogs.push(`After turn: ${group1Name} ${g1StillAfter} alive, ${group2Name} ${g2StillAfter} alive`);
+      // Don't log alive/dead status after each turn - only at round end
     }
 
     // Always update combat log with this round's actions first
     setCombatLog(prev => [...prev, ...roundLogs]);
+    
+    // Log alive/dead status at the END of the round
+    const g1StillAlive = updatedGroup1.filter(c => c.isAlive && c.hp > 0).length;
+    const g2StillAlive = updatedGroup2.filter(c => c.isAlive && c.hp > 0).length;
+    setCombatLog(prev => [...prev, `End of Round ${currentRound}: ${group1Name} ${g1StillAlive} alive, ${group2Name} ${g2StillAlive} alive`]);
     
     // Check if war should end after this round is complete
     if (!isWarActive(updatedGroup1, updatedGroup2)) {
@@ -262,7 +264,11 @@ export function WarSystem({ groups, onUpdateGroups }: WarSystemProps) {
         if (allyIndex !== -1) {
           if (repairType === 'GUN') {
             const wasGunBroken = updatedCurrentGroup[allyIndex].gunPoints === 0;
+            const currentGunPoints = updatedCurrentGroup[allyIndex].gunPoints;
             const repairAmount = tokensToUse * (currentChar.class === 3 ? 2 : 1); // Scavenger doubles gun repair
+            const maxRepair = (updatedCurrentGroup[allyIndex].maxGunPoints || 4) - currentGunPoints;
+            const actualRepair = Math.min(repairAmount, maxRepair);
+            
             updatedCurrentGroup[allyIndex].gunPoints = Math.min(
               updatedCurrentGroup[allyIndex].gunPoints + repairAmount,
               updatedCurrentGroup[allyIndex].maxGunPoints || 4
@@ -275,14 +281,19 @@ export function WarSystem({ groups, onUpdateGroups }: WarSystemProps) {
                 roundLogs.push(`${repairTarget.name} receives full bullet count with repaired gun!`);
               }
             }
+            roundLogs.push(`${repairTarget.name} receives ${actualRepair} gun point repair from ${currentChar.name} using ${tokensToUse} junk tokens`);
           } else if (repairType === 'ARMOR') {
+            const currentArmorPlates = updatedCurrentGroup[allyIndex].armorPlates;
             const repairAmount = tokensToUse * (currentChar.class === 4 ? 2 : 1); // Tinkerer doubles armor repair
+            const maxRepair = updatedCurrentGroup[allyIndex].maxArmorPlates - currentArmorPlates;
+            const actualRepair = Math.min(repairAmount, maxRepair);
+            
             updatedCurrentGroup[allyIndex].armorPlates = Math.min(
               updatedCurrentGroup[allyIndex].armorPlates + repairAmount,
               updatedCurrentGroup[allyIndex].maxArmorPlates
             );
+            roundLogs.push(`${repairTarget.name} receives ${actualRepair} armor plate repair from ${currentChar.name} using ${tokensToUse} junk tokens`);
           }
-          roundLogs.push(`${repairTarget.name} receives ${repairType.toLowerCase()} repair from ${currentChar.name}`);
         }
         
         roundLogs.push(...repairResult.log);
