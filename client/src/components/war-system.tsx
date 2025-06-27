@@ -207,19 +207,73 @@ export function WarSystem({ groups, onUpdateGroups }: WarSystemProps) {
     // AI Decision Making based on class role
     const classRole = CLASS_ROLE_TYPE[currentChar.class as keyof typeof CLASS_ROLE_TYPE];
     
-    // Support AI: Prioritize helping allies first
+    // Support AI: Prioritize helping allies first based on class specialization
     if (classRole === 'SUPPORT' && currentChar.junkTokens > 0) {
-      const allAllies = updatedCurrentGroup.filter(ally => ally.isAlive && ally.hp > 0 && ally.id !== currentChar.id);
-      const needsRepair = allAllies.find(ally => 
-        ally.armorPlates < ally.maxArmorPlates || 
-        (ally.hasRangedWeapon && ally.gunPoints < 4)
-      );
+      let repairTarget = null;
+      let repairType: 'ARMOR' | 'GUN' | null = null;
       
-      if (needsRepair) {
-        const repairTarget = needsRepair.armorPlates < needsRepair.maxArmorPlates ? 'ARMOR' : 'GUN';
+      // Scavenger (class 3) - Ranged support: prioritize gun repairs for Engineers and Shooters
+      if (currentChar.class === 3) {
+        const rangedAllies = updatedCurrentGroup.filter(ally => 
+          ally.isAlive && ally.hp > 0 && ally.id !== currentChar.id &&
+          (ally.class === 1 || ally.class === 2) && // Shooter or Engineer
+          ally.gunPoints < (ally.maxGunPoints || 4)
+        );
+        
+        if (rangedAllies.length > 0) {
+          // Find ally with lowest gun points (most urgent)
+          repairTarget = rangedAllies.reduce((lowest, current) => 
+            current.gunPoints < lowest.gunPoints ? current : lowest
+          );
+          repairType = 'GUN';
+        }
+      }
+      
+      // Tinkerer (class 4) - Melee support: prioritize armor repairs for Brute and Breaker
+      if (currentChar.class === 4) {
+        const meleeAllies = updatedCurrentGroup.filter(ally => 
+          ally.isAlive && ally.hp > 0 && ally.id !== currentChar.id &&
+          (ally.class === 5 || ally.class === 6) && // Brute or Breaker
+          ally.armorPlates < ally.maxArmorPlates
+        );
+        
+        if (meleeAllies.length > 0) {
+          // Find ally with lowest armor (most urgent)
+          repairTarget = meleeAllies.reduce((lowest, current) => 
+            current.armorPlates < lowest.armorPlates ? current : lowest
+          );
+          repairType = 'ARMOR';
+        }
+      }
+      
+      // Perform the repair if target found
+      if (repairTarget && repairType) {
         const tokensToUse = Math.min(currentChar.junkTokens, 2);
-        const repairResult = performRepair(currentChar, repairTarget, tokensToUse);
+        const repairResult = performRepair(currentChar, repairType, tokensToUse);
         updatedCurrentGroup[charIndex] = repairResult.character;
+        
+        // Update the ally's stats
+        const allyIndex = updatedCurrentGroup.findIndex(c => c.id === repairTarget.id);
+        if (allyIndex !== -1) {
+          if (repairType === 'GUN') {
+            const repairAmount = tokensToUse * (currentChar.class === 3 ? 2 : 1); // Scavenger doubles gun repair
+            updatedCurrentGroup[allyIndex].gunPoints = Math.min(
+              updatedCurrentGroup[allyIndex].gunPoints + repairAmount,
+              updatedCurrentGroup[allyIndex].maxGunPoints || 4
+            );
+            if (updatedCurrentGroup[allyIndex].gunPoints > 0) {
+              updatedCurrentGroup[allyIndex].hasRangedWeapon = true;
+            }
+          } else if (repairType === 'ARMOR') {
+            const repairAmount = tokensToUse * (currentChar.class === 4 ? 2 : 1); // Tinkerer doubles armor repair
+            updatedCurrentGroup[allyIndex].armorPlates = Math.min(
+              updatedCurrentGroup[allyIndex].armorPlates + repairAmount,
+              updatedCurrentGroup[allyIndex].maxArmorPlates
+            );
+          }
+          roundLogs.push(`${repairTarget.name} receives ${repairType.toLowerCase()} repair from ${currentChar.name}`);
+        }
+        
         roundLogs.push(...repairResult.log);
         return { currentGroup: updatedCurrentGroup, opposingGroup: updatedOpposingGroup, logs: roundLogs };
       }

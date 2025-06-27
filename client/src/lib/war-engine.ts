@@ -94,6 +94,16 @@ export const applyCardEffect = (
     case 10: // Reduce enemy Armor by -2 until next turn
       logs.push(`${character.name} prepares armor breach - enemy armor will be reduced by 2`);
       break;
+    
+    case 11: // Junk Material - Gain 1 junk token
+      updatedCharacter.junkTokens += 1;
+      logs.push(`${character.name} gains 1 junk token from Junk Material`);
+      break;
+    
+    case 13: // Scrap Scan - Gain 1 junk token
+      updatedCharacter.junkTokens += 1;
+      logs.push(`${character.name} gains 1 junk token from Scrap Scan`);
+      break;
   }
 
   return { character: updatedCharacter, log: logs };
@@ -255,15 +265,21 @@ export const simulateWarRound = (
     
     combatLogs.push(`--- ${refreshedChar.name}'s Turn ---`);
     
-    // Support classes prioritize junk token cards if they need repairs
+    // Support classes prioritize junk token cards if they or their allies need repairs
     let shouldPlayJunkCard = false;
     let junkCardToPlay = null;
     
-    if ((refreshedChar.class === 3 || refreshedChar.class === 4) && needsJunkTokens(refreshedChar, currentGroup)) {
-      const junkCards = refreshedChar.cards.filter(card => isJunkTokenCard(card));
-      if (junkCards.length > 0) {
-        shouldPlayJunkCard = true;
-        junkCardToPlay = junkCards[0]; // Take first available junk card
+    // Check if support classes need junk tokens for repairs (self or allies)
+    if (refreshedChar.class === 3 || refreshedChar.class === 4) {
+      const repairNeeded = shouldPerformRepairs(refreshedChar, currentGroup);
+      const needsJunk = repairNeeded.shouldRepair && refreshedChar.junkTokens === 0;
+      
+      if (needsJunk) {
+        const junkCards = refreshedChar.cards.filter(card => isJunkTokenCard(card));
+        if (junkCards.length > 0) {
+          shouldPlayJunkCard = true;
+          junkCardToPlay = junkCards[0]; // Take first available junk card
+        }
       }
     }
     

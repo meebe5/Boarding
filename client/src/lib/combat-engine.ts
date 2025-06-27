@@ -538,22 +538,23 @@ export const shouldPerformRepairs = (character: Character, allies: Character[]):
   
   // Ranged support (Scavenger) - prioritize gun repairs for Engineers and Shooters
   if (character.class === 3) {
+    // First check allies who need gun repairs
     const rangedAllies = allies.filter(ally => 
       ally.isAlive && 
+      ally.id !== character.id && // Don't include self
       (ally.class === 1 || ally.class === 2) && // Shooter or Engineer
-      ally.hasRangedWeapon && 
-      ally.gunPoints < (ally.maxGunPoints || 4)
+      ally.gunPoints < (ally.maxGunPoints || 4) // Need repair
     );
     
     if (rangedAllies.length > 0) {
-      // Find ally with lowest gun points
+      // Find ally with lowest gun points (most urgent repair)
       const target = rangedAllies.reduce((lowest, current) => 
         current.gunPoints < lowest.gunPoints ? current : lowest
       );
       return { shouldRepair: true, target, repairType: 'GUN' };
     }
     
-    // Check if self needs gun repair
+    // Then check if self needs gun repair
     if (character.hasRangedWeapon && character.gunPoints < (character.maxGunPoints || 4)) {
       return { shouldRepair: true, target: character, repairType: 'GUN' };
     }
@@ -561,24 +562,37 @@ export const shouldPerformRepairs = (character: Character, allies: Character[]):
   
   // Melee support (Tinkerer) - prioritize armor repairs for Brute and Breaker
   if (character.class === 4) {
+    // First check allies who need armor repairs
     const meleeAllies = allies.filter(ally => 
       ally.isAlive && 
+      ally.id !== character.id && // Don't include self
       (ally.class === 5 || ally.class === 6) && // Brute or Breaker
-      ally.armorPlates < ally.maxArmorPlates
+      ally.armorPlates < ally.maxArmorPlates // Need repair
     );
     
     if (meleeAllies.length > 0) {
-      // Find ally with lowest armor
+      // Find ally with lowest armor (most urgent repair)
       const target = meleeAllies.reduce((lowest, current) => 
         current.armorPlates < lowest.armorPlates ? current : lowest
       );
       return { shouldRepair: true, target, repairType: 'ARMOR' };
     }
     
-    // Check if self needs armor repair
+    // Then check if self needs armor repair
     if (character.armorPlates < character.maxArmorPlates) {
       return { shouldRepair: true, target: character, repairType: 'ARMOR' };
     }
+  }
+  
+  // For other classes or if no specific repairs needed, check general repairs
+  // Check if self needs gun repair
+  if (character.hasRangedWeapon && character.gunPoints < (character.maxGunPoints || 4)) {
+    return { shouldRepair: true, target: character, repairType: 'GUN' };
+  }
+  
+  // Check if self needs armor repair
+  if (character.armorPlates < character.maxArmorPlates) {
+    return { shouldRepair: true, target: character, repairType: 'ARMOR' };
   }
   
   return { shouldRepair: false };
