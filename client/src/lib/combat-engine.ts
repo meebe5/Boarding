@@ -102,8 +102,8 @@ export const playCard = (
       break;
       
     case 11: // Junk Material
-      updatedCharacter.junkMaterials += 1;
-      logs.push(`${character.name} gains 1 Junk Material (${updatedCharacter.junkMaterials} total)`);
+      updatedCharacter.junkTokens += 1;
+      logs.push(`${character.name} gains 1 Junk Material (${updatedCharacter.junkTokens} total)`);
       break;
       
     case 12: // Triage - Restore 2 HP
@@ -120,8 +120,8 @@ export const playCard = (
       break;
       
     case 13: // Scrap Scan
-      updatedCharacter.junkMaterials += 1;
-      logs.push(`${character.name} finds 1 Junk Material (${updatedCharacter.junkMaterials} total)`);
+      updatedCharacter.junkTokens += 1;
+      logs.push(`${character.name} finds 1 Junk Material (${updatedCharacter.junkTokens} total)`);
       break;
       
     case 14: // Retaliation
@@ -194,6 +194,9 @@ export const getDamageModifiers = (character: Character, attackType: 'melee' | '
   if (attackType === 'ranged' && character.class === 1) { // Shooter
     modifier += 1;
   }
+  if (attackType === 'melee' && character.class === 5) { // Brute
+    modifier += 1;
+  }
   
   return modifier;
 };
@@ -248,8 +251,19 @@ export const performRangedAttack = (
   
   // Resolve damage
   if (attackRoll >= effectiveArmor) {
-    // Full damage to HP
-    const damage = attackRoll;
+    // Roll ranged damage dice
+    const baseDamage = rollDice(attacker.rangedDamageDice || '1d4');
+    const damageModifier = getDamageModifiers(attacker, 'ranged');
+    const damage = baseDamage + damageModifier;
+    
+    // Log damage calculation with class ability info
+    const className = getClassName(attacker.class);
+    if (damageModifier > 0) {
+      logs.push(`${attacker.name} rolls ${attacker.rangedDamageDice || '1d4'} + ${damageModifier} (${className} class ability) = ${damage} damage`);
+    } else {
+      logs.push(`${attacker.name} rolls ${attacker.rangedDamageDice || '1d4'} = ${damage} damage`);
+    }
+    
     const actualDamage = Math.min(damage, updatedDefender.tempHp + updatedDefender.hp);
     
     if (updatedDefender.tempHp > 0) {
