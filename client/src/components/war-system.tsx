@@ -229,12 +229,12 @@ export function WarSystem({ groups, onUpdateGroups }: WarSystemProps) {
         }
       }
       
-      // Tinkerer (class 4) - Melee support: prioritize armor repairs for Brute and Breaker
+      // Tinkerer (class 4) - Melee support: prioritize armor repairs for ALL melee classes
       if (currentChar.class === 4) {
         const meleeAllies = updatedCurrentGroup.filter(ally => 
           ally.isAlive && ally.hp > 0 && ally.id !== currentChar.id &&
-          (ally.class === 5 || ally.class === 6) && // Brute or Breaker
-          ally.armorPlates < ally.maxArmorPlates
+          (ally.class === 4 || ally.class === 5 || ally.class === 6) && // Tinkerer, Brute, or Breaker
+          ally.armorPlates < ally.maxArmorPlates // Actually missing armor points
         );
         
         if (meleeAllies.length > 0) {
@@ -242,6 +242,11 @@ export function WarSystem({ groups, onUpdateGroups }: WarSystemProps) {
           repairTarget = meleeAllies.reduce((lowest, current) => 
             current.armorPlates < lowest.armorPlates ? current : lowest
           );
+          repairType = 'ARMOR';
+        }
+        // If no allies need repair, check if self needs armor repair
+        else if (currentChar.armorPlates < currentChar.maxArmorPlates) {
+          repairTarget = currentChar;
           repairType = 'ARMOR';
         }
       }

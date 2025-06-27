@@ -560,14 +560,14 @@ export const shouldPerformRepairs = (character: Character, allies: Character[]):
     }
   }
   
-  // Melee support (Tinkerer) - prioritize armor repairs for Brute and Breaker
+  // Melee support (Tinkerer) - prioritize armor repairs for ALL melee classes
   if (character.class === 4) {
-    // First check allies who need armor repairs
+    // First check allies who actually need armor repairs (missing ANY armor points)
     const meleeAllies = allies.filter(ally => 
       ally.isAlive && 
       ally.id !== character.id && // Don't include self
-      (ally.class === 5 || ally.class === 6) && // Brute or Breaker
-      ally.armorPlates < ally.maxArmorPlates // Need repair
+      (ally.class === 4 || ally.class === 5 || ally.class === 6) && // Tinkerer, Brute, or Breaker
+      ally.armorPlates < ally.maxArmorPlates // Actually missing armor points
     );
     
     if (meleeAllies.length > 0) {
@@ -578,7 +578,7 @@ export const shouldPerformRepairs = (character: Character, allies: Character[]):
       return { shouldRepair: true, target, repairType: 'ARMOR' };
     }
     
-    // Then check if self needs armor repair
+    // Only repair self if missing armor points (allies have priority)
     if (character.armorPlates < character.maxArmorPlates) {
       return { shouldRepair: true, target: character, repairType: 'ARMOR' };
     }

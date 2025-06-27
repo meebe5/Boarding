@@ -119,7 +119,8 @@ Changelog:
   * Scavenger class now draws from SUPPORT deck for junk token acquisition
   * Updated combat logs to show single roll determining hit and damage
   * Junk token cards (11, 13) don't count against card usage limit - allows second card play
-  * Support class AI improvements: Scavenger repairs guns for Engineers/Shooters, Tinkerer repairs armor for Brute/Breaker
+  * Support class AI improvements: Scavenger repairs guns for Engineers/Shooters, Tinkerer repairs armor for ALL melee classes
+  * Tinkerer repair logic: Only repairs armor when allies are actually missing armor points, prioritizes allies over self
   * Support classes prioritize repair actions when allies need them and junk tokens are available
 ```
 
