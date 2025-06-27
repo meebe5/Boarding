@@ -95,9 +95,9 @@ export const applyCardEffect = (
       logs.push(`${character.name} prepares armor breach - enemy armor will be reduced by 2`);
       break;
     
-    case 11: // Junk Material - Gain 1 junk token
+    case 11: // Junk Tokens - Gain 1 junk token
       updatedCharacter.junkTokens += 1;
-      logs.push(`${character.name} gains 1 junk token from Junk Material`);
+      logs.push(`${character.name} gains 1 junk token from Junk Tokens`);
       break;
     
     case 13: // Scrap Scan - Gain 1 junk token

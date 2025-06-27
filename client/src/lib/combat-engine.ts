@@ -205,9 +205,9 @@ export const playCard = (
       });
       break;
       
-    case 11: // Junk Material
+    case 11: // Junk Tokens
       updatedCharacter.junkTokens += 1;
-      logs.push(`${character.name} gains 1 Junk Material (${updatedCharacter.junkTokens} total)`);
+      logs.push(`${character.name} gains 1 Junk Token (${updatedCharacter.junkTokens} total)`);
       break;
       
     case 12: // Triage - Restore 2 HP
@@ -225,7 +225,7 @@ export const playCard = (
       
     case 13: // Scrap Scan
       updatedCharacter.junkTokens += 1;
-      logs.push(`${character.name} finds 1 Junk Material (${updatedCharacter.junkTokens} total)`);
+      logs.push(`${character.name} finds 1 Junk Token (${updatedCharacter.junkTokens} total)`);
       break;
       
     case 14: // Retaliation
@@ -728,5 +728,5 @@ export const needsJunkTokens = (character: Character, allies: Character[]): bool
 
 // Check if a card gives junk tokens (these don't count against card usage limit)
 export const isJunkTokenCard = (cardId: number): boolean => {
-  return cardId === 11 || cardId === 13; // Junk Material or Scrap Scan
+  return cardId === 11 || cardId === 13; // Junk Tokens or Scrap Scan
 };

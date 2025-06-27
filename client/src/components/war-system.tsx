@@ -300,8 +300,8 @@ export function WarSystem({ groups, onUpdateGroups }: WarSystemProps) {
           roundLogs.push(...repairResult.log);
           return { currentGroup: updatedCurrentGroup, opposingGroup: updatedOpposingGroup, logs: roundLogs };
         } else {
-          // No junk - draw support card for junk material if possible
-          const supportCards = [11, 13]; // Junk Material and Scrap Scan
+          // No junk - draw support card for junk tokens if possible
+          const supportCards = [11, 13]; // Junk Tokens and Scrap Scan
           const hasJunkCard = currentChar.cards.some(card => supportCards.includes(card));
           if (hasJunkCard) {
             const junkCard = currentChar.cards.find(card => supportCards.includes(card));

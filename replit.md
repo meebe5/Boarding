@@ -122,6 +122,9 @@ Changelog:
   * Support class AI improvements: Scavenger repairs guns for Engineers/Shooters, Tinkerer repairs armor for ALL melee classes
   * Tinkerer repair logic: Only repairs armor when allies are actually missing armor points, prioritizes allies over self
   * Support classes prioritize repair actions when allies need them and junk tokens are available
+  * Fixed Ricochet card bug - now only triggers bonus damage when armor plates are actually lost, not when HP is damaged
+  * Standardized terminology: Changed all "JUNK MATERIALS" references to "JUNK TOKENS" throughout codebase
+  * Confirmed card duration system: All cards last until beginning of next turn (turnsRemaining: 1), except junk token cards which are instant
 ```
 
 ## User Preferences

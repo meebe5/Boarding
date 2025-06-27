@@ -18,9 +18,9 @@ export const CARD_EFFECTS = {
   10: "[Parry] Until your next turn, reduce all melee damage taken by 1",
   
   // UTILITY CARDS (11-15)
-  11: "[Junk Material] Gain 1 Junk Material (used for gun or armor repair)",
+  11: "[Junk Tokens] Gain 1 Junk Token (used for gun or armor repair)",
   12: "[Triage] Restore 2 HP to yourself or adjacent ally",
-  13: "[Scrap Scan] Pick one: Find 1 Junk item, OR Reveal armor value of one visible enemy",
+  13: "[Scrap Scan] Pick one: Find 1 Junk Token, OR Reveal armor value of one visible enemy",
   14: "[Retaliation] 2 HP damage to the [Profile] that attacks you, lasts until the beginning of your next turn",
   15: "[Juicing] Give an Ally or yourself +2 Temporary Hitpoints, that lasts until the start of your next turn"
 };
