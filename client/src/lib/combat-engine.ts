@@ -78,6 +78,13 @@ export const playCard = (
   // Remove card from hand
   updatedCharacter.cards = updatedCharacter.cards.filter(c => c !== cardId);
   
+  // Clear all existing active effects from this character before applying new card (except junk token cards)
+  if (!isJunkTokenCard(cardId)) {
+    updatedCharacter.activeEffects = updatedCharacter.activeEffects.filter(effect => 
+      isJunkTokenCard(effect.cardId) || effect.sourceProfileId !== character.id
+    );
+  }
+  
   logs.push(`${character.name} plays ${CARD_EFFECTS[cardId as keyof typeof CARD_EFFECTS]}`);
   
   switch (cardId) {

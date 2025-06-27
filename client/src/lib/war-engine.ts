@@ -1,6 +1,6 @@
 import type { Character, WarState, WarParticipant, ActiveEffect } from '@shared/schema';
 import { CARD_EFFECTS } from './character-generator';
-import { shouldPerformRepairs, needsJunkTokens, isJunkTokenCard, performRepair, playCard, performReload, applyCardEffect } from './combat-engine';
+import { shouldPerformRepairs, needsJunkTokens, isJunkTokenCard, performRepair, playCard, performReload } from './combat-engine';
 
 // Dice rolling functions
 export const rollD6 = (): number => Math.floor(Math.random() * 6) + 1;
@@ -45,16 +45,7 @@ export const getCardModifiers = (character: Character, action: 'attack' | 'damag
   return modifier;
 };
 
-// Apply card effects - use combat engine for proper implementation
-export const applyCardEffect = (
-  character: Character,
-  cardId: number,
-  allCharacters: Character[],
-  targetId?: string
-): { character: Character; log: string[] } => {
-  // Use the combat engine's proper card implementation
-  return playCard(character, cardId, allCharacters, targetId);
-};
+
 
 // Simulate a single attack
 export const simulateAttack = (
@@ -232,7 +223,7 @@ export const simulateWarRound = (
       // Log card usage
       combatLogs.push(`${character.name} plays Card ${cardId}: ${CARD_EFFECTS[cardId as keyof typeof CARD_EFFECTS]}`);
       
-      // Clear all existing active effects before applying new card (except junk token effects)
+      // Clear all existing active effects from this character before applying new card (keep junk token effects and effects from other characters)
       let characterWithClearedEffects = {
         ...character,
         activeEffects: character.activeEffects.filter(effect => 
@@ -240,7 +231,7 @@ export const simulateWarRound = (
         )
       };
       
-      const cardEffect = applyCardEffect(characterWithClearedEffects, cardId, allChars);
+      const cardEffect = playCard(characterWithClearedEffects, cardId, allChars);
       combatLogs.push(...cardEffect.log);
       return cardEffect.character;
     };
