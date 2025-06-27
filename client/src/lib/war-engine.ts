@@ -1,6 +1,6 @@
 import type { Character, WarState, WarParticipant, ActiveEffect } from '@shared/schema';
 import { CARD_EFFECTS } from './character-generator';
-import { shouldPerformRepairs, needsJunkTokens, isJunkTokenCard, performRepair, playCard } from './combat-engine';
+import { shouldPerformRepairs, needsJunkTokens, isJunkTokenCard, performRepair, playCard, performReload, applyCardEffect } from './combat-engine';
 
 // Dice rolling functions
 export const rollD6 = (): number => Math.floor(Math.random() * 6) + 1;
@@ -227,94 +227,78 @@ export const simulateWarRound = (
     
     combatLogs.push(`--- ${refreshedChar.name}'s Turn ---`);
     
-    // Support classes prioritize junk token cards if they or their allies need repairs
-    let shouldPlayJunkCard = false;
-    let junkCardToPlay = null;
-    
-    // Check if support classes need junk tokens for repairs (self or allies)
-    if (refreshedChar.class === 3 || refreshedChar.class === 4) {
-      const repairNeeded = shouldPerformRepairs(refreshedChar, currentGroup);
-      const needsJunk = repairNeeded.shouldRepair && refreshedChar.junkTokens === 0;
-      
-      if (needsJunk) {
-        const junkCards = refreshedChar.cards.filter(card => isJunkTokenCard(card));
-        if (junkCards.length > 0) {
-          shouldPlayJunkCard = true;
-          junkCardToPlay = junkCards[0]; // Take first available junk card
-        }
-      }
-    }
-    
-    // Pick a card to play (prioritize junk cards for support classes)
-    let cardToPlay = null;
-    if (shouldPlayJunkCard && junkCardToPlay) {
-      cardToPlay = junkCardToPlay;
-    } else {
-      // Only allow cards that aren't currently active (except junk token cards which are instant)
-      const availableCards = refreshedChar.cards.filter(card => 
-        !refreshedChar.activeEffects.some(e => e.cardId === card && e.sourceProfileId === refreshedChar.id) ||
-        isJunkTokenCard(card)
-      );
-      if (availableCards.length > 0) {
-        cardToPlay = availableCards[Math.floor(Math.random() * availableCards.length)];
-      }
-    }
-    
-    if (cardToPlay) {
+    // Helper function to activate a card for a character
+    const activateCard = (character: Character, cardId: number, allChars: Character[]) => {
       // Log card usage
-      combatLogs.push(`${refreshedChar.name} plays Card ${cardToPlay}: ${CARD_EFFECTS[cardToPlay as keyof typeof CARD_EFFECTS]}`);
+      combatLogs.push(`${character.name} plays Card ${cardId}: ${CARD_EFFECTS[cardId as keyof typeof CARD_EFFECTS]}`);
       
-      // IMPORTANT: Clear all existing active effects before applying new card
-      // This enforces the rule that only one card can be active at a time
+      // Clear all existing active effects before applying new card (except junk token effects)
       let characterWithClearedEffects = {
-        ...refreshedChar,
-        activeEffects: refreshedChar.activeEffects.filter(effect => 
-          // Keep only junk token effects (they're instant) and effects from other sources
-          isJunkTokenCard(effect.cardId) || effect.sourceProfileId !== refreshedChar.id
+        ...character,
+        activeEffects: character.activeEffects.filter(effect => 
+          isJunkTokenCard(effect.cardId) || effect.sourceProfileId !== character.id
         )
       };
       
-      const cardEffect = applyCardEffect(characterWithClearedEffects, cardToPlay, allCharacters);
+      const cardEffect = applyCardEffect(characterWithClearedEffects, cardId, allChars);
       combatLogs.push(...cardEffect.log);
-      currentGroup[currentCharIndex] = cardEffect.character;
+      return cardEffect.character;
+    };
+    
+    // Helper function to get available cards for activation
+    const getAvailableCards = (character: Character, prioritizeJunk: boolean = false) => {
+      if (prioritizeJunk) {
+        const junkCards = character.cards.filter(card => isJunkTokenCard(card));
+        if (junkCards.length > 0) {
+          return junkCards;
+        }
+      }
       
-      // If this was a junk token card, allow playing another card
-      if (isJunkTokenCard(cardToPlay)) {
-        const remainingCards = currentGroup[currentCharIndex].cards.filter(card => 
-          card !== cardToPlay && 
-          (!currentGroup[currentCharIndex].activeEffects.some(e => e.cardId === card && e.sourceProfileId === currentGroup[currentCharIndex].id) ||
-           isJunkTokenCard(card))
-        );
-        if (remainingCards.length > 0) {
+      return character.cards.filter(card => 
+        !character.activeEffects.some(e => e.cardId === card && e.sourceProfileId === character.id) ||
+        isJunkTokenCard(card)
+      );
+    };
+    
+    // First check if support class needs junk tokens and has junk token cards
+    const repairDecision = shouldPerformRepairs(currentGroup[currentCharIndex], currentGroup);
+    const needsJunkForRepair = repairDecision.shouldRepair && currentGroup[currentCharIndex].junkTokens === 0;
+    
+    if (needsJunkForRepair && (currentGroup[currentCharIndex].class === 3 || currentGroup[currentCharIndex].class === 4)) {
+      const junkCards = getAvailableCards(currentGroup[currentCharIndex], true);
+      if (junkCards.length > 0) {
+        const junkCard = junkCards[0];
+        currentGroup[currentCharIndex] = activateCard(currentGroup[currentCharIndex], junkCard, allCharacters);
+        
+        // Check for second card after junk token card
+        const remainingCards = getAvailableCards(currentGroup[currentCharIndex]).filter(c => c !== junkCard);
+        if (remainingCards.length > 0 && isJunkTokenCard(junkCard)) {
           const secondCard = remainingCards[Math.floor(Math.random() * remainingCards.length)];
-          combatLogs.push(`${currentGroup[currentCharIndex].name} plays second card ${secondCard}: ${CARD_EFFECTS[secondCard as keyof typeof CARD_EFFECTS]}`);
-          
-          // Clear existing active effects before applying second card too
-          let characterWithClearedEffectsSecond = {
-            ...currentGroup[currentCharIndex],
-            activeEffects: currentGroup[currentCharIndex].activeEffects.filter(effect => 
-              isJunkTokenCard(effect.cardId) || effect.sourceProfileId !== currentGroup[currentCharIndex].id
-            )
-          };
-          
-          const secondCardEffect = applyCardEffect(characterWithClearedEffectsSecond, secondCard, allCharacters);
-          combatLogs.push(...secondCardEffect.log);
-          currentGroup[currentCharIndex] = secondCardEffect.character;
+          currentGroup[currentCharIndex] = activateCard(currentGroup[currentCharIndex], secondCard, allCharacters);
         }
       }
     }
     
-    // Check if support class should perform repairs first
-    const repairDecision = shouldPerformRepairs(currentGroup[currentCharIndex], currentGroup);
-    
+    // Now determine what action to take and only activate cards if action can be performed
     if (repairDecision.shouldRepair && currentGroup[currentCharIndex].junkTokens > 0) {
+      // REPAIR ACTION - activate any support cards that help with repairs
+      const supportCards = currentGroup[currentCharIndex].cards.filter(card => 
+        [12, 15].includes(card) && // Triage, Juicing
+        !currentGroup[currentCharIndex].activeEffects.some(e => e.cardId === card && e.sourceProfileId === currentGroup[currentCharIndex].id)
+      );
+      
+      if (supportCards.length > 0 && Math.random() < 0.7) { // 70% chance to use support card
+        const supportCard = supportCards[Math.floor(Math.random() * supportCards.length)];
+        currentGroup[currentCharIndex] = activateCard(currentGroup[currentCharIndex], supportCard, allCharacters);
+      }
+      
       // Perform repair action
-      const junkToUse = Math.min(currentGroup[currentCharIndex].junkTokens, 2); // Use up to 2 junk tokens
+      const junkToUse = Math.min(currentGroup[currentCharIndex].junkTokens, 2);
       const repairResult = performRepair(currentGroup[currentCharIndex], repairDecision.repairType!, junkToUse);
       currentGroup[currentCharIndex] = repairResult.character;
       combatLogs.push(...repairResult.log);
       
-      // If repairing an ally, update their stats in the group
+      // Update ally stats if repairing an ally
       if (repairDecision.target && repairDecision.target.id !== currentGroup[currentCharIndex].id) {
         const allyIndex = currentGroup.findIndex(c => c.id === repairDecision.target!.id);
         if (allyIndex !== -1) {
@@ -326,7 +310,6 @@ export const simulateWarRound = (
             );
             if (currentGroup[allyIndex].gunPoints > 0) {
               currentGroup[allyIndex].hasRangedWeapon = true;
-              // If gun was completely broken and is now repaired, restore max bullets
               if (wasGunBroken) {
                 currentGroup[allyIndex].bulletTokens = currentGroup[allyIndex].maxBulletTokens || 4;
                 combatLogs.push(`${repairDecision.target!.name} receives full bullet count with repaired gun!`);
@@ -342,29 +325,87 @@ export const simulateWarRound = (
         }
       }
     } else {
-      // Decide between attack or defend (80% attack, 20% defend)
+      // COMBAT ACTION - decide between attack or defend
       const actionRoll = Math.random();
       if (actionRoll < 0.8) {
-        // Attack
+        // ATTACK ACTION
         const target = getRandomTarget(opposingGroup);
         if (target) {
           const targetIndex = opposingGroup.findIndex(c => c.id === target.id);
-          const attackModifier = getCardModifiers(currentGroup[currentCharIndex], 'attack');
-          const damageModifier = getCardModifiers(currentGroup[currentCharIndex], 'damage');
+          let canAttack = true;
+          let mustReload = false;
           
-          const attackResult = simulateAttack(
-            currentGroup[currentCharIndex],
-            opposingGroup[targetIndex],
-            attackModifier,
-            damageModifier
-          );
+          // Check if ranged character can actually attack
+          if (currentGroup[currentCharIndex].hasRangedWeapon) {
+            if (currentGroup[currentCharIndex].bulletTokens === 0) {
+              canAttack = false;
+              mustReload = true;
+            } else if (currentGroup[currentCharIndex].gunPoints === 0) {
+              canAttack = false;
+              mustReload = false; // Can't reload broken gun without junk
+            }
+          }
           
-          currentGroup[currentCharIndex] = attackResult.attacker;
-          opposingGroup[targetIndex] = attackResult.defender;
-          combatLogs.push(...attackResult.log);
+          if (canAttack) {
+            // ATTACK - activate offensive cards
+            const offensiveCards = getAvailableCards(currentGroup[currentCharIndex]).filter(card =>
+              ![11, 12, 13, 15].includes(card) // Exclude junk tokens and pure support cards
+            );
+            
+            if (offensiveCards.length > 0 && Math.random() < 0.7) { // 70% chance to use card
+              const offensiveCard = offensiveCards[Math.floor(Math.random() * offensiveCards.length)];
+              currentGroup[currentCharIndex] = activateCard(currentGroup[currentCharIndex], offensiveCard, allCharacters);
+            }
+            
+            const attackModifier = getCardModifiers(currentGroup[currentCharIndex], 'attack');
+            const damageModifier = getCardModifiers(currentGroup[currentCharIndex], 'damage');
+            
+            const attackResult = simulateAttack(
+              currentGroup[currentCharIndex],
+              opposingGroup[targetIndex],
+              attackModifier,
+              damageModifier
+            );
+            
+            currentGroup[currentCharIndex] = attackResult.attacker;
+            opposingGroup[targetIndex] = attackResult.defender;
+            combatLogs.push(...attackResult.log);
+          } else if (mustReload) {
+            // RELOAD - must discard any chosen card since action failed
+            const availableCards = getAvailableCards(currentGroup[currentCharIndex]).filter(card => !isJunkTokenCard(card));
+            if (availableCards.length > 0) {
+              const discardedCard = availableCards[Math.floor(Math.random() * availableCards.length)];
+              combatLogs.push(`${currentGroup[currentCharIndex].name} attempted to use Card ${discardedCard} but must reload instead - card discarded!`);
+            }
+            
+            // Perform reload
+            const reloadResult = performReload(currentGroup[currentCharIndex]);
+            currentGroup[currentCharIndex] = reloadResult.character;
+            combatLogs.push(...reloadResult.log);
+          } else {
+            // CAN'T ATTACK OR RELOAD - defend instead, discard any chosen card
+            const availableCards = getAvailableCards(currentGroup[currentCharIndex]).filter(card => !isJunkTokenCard(card));
+            if (availableCards.length > 0) {
+              const discardedCard = availableCards[Math.floor(Math.random() * availableCards.length)];
+              combatLogs.push(`${currentGroup[currentCharIndex].name} attempted to use Card ${discardedCard} but cannot act - card discarded!`);
+            }
+            
+            const defendResult = simulateDefend(currentGroup[currentCharIndex]);
+            currentGroup[currentCharIndex] = defendResult.character;
+            combatLogs.push(...defendResult.log);
+          }
         }
       } else {
-        // Defend
+        // DEFEND ACTION - activate defensive cards
+        const defensiveCards = getAvailableCards(currentGroup[currentCharIndex]).filter(card =>
+          [6, 10, 14].includes(card) // Patience, Parry, Retaliation
+        );
+        
+        if (defensiveCards.length > 0 && Math.random() < 0.8) { // 80% chance to use defensive card when defending
+          const defensiveCard = defensiveCards[Math.floor(Math.random() * defensiveCards.length)];
+          currentGroup[currentCharIndex] = activateCard(currentGroup[currentCharIndex], defensiveCard, allCharacters);
+        }
+        
         const defendResult = simulateDefend(currentGroup[currentCharIndex]);
         currentGroup[currentCharIndex] = defendResult.character;
         combatLogs.push(...defendResult.log);
