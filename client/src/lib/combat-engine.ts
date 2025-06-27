@@ -222,23 +222,29 @@ export const performRangedAttack = (
     updatedAttacker.bulletTokens = Math.max(0, updatedAttacker.bulletTokens - 1);
   }
   
-  // Roll attack
-  let attackRoll = rollD6() + getAttackModifiers(attacker, 'ranged');
+  // Roll damage dice (this is the single roll that determines both hit and damage)
+  let damageRoll = rollDice(attacker.rangedDamageDice || '1d4');
+  const damageModifier = getDamageModifiers(attacker, 'ranged');
+  let finalDamageRoll = damageRoll + damageModifier;
   
-  // Check for Volley effect (show both rolls)
+  // Check for Volley effect (roll twice, take higher)
   const hasVolley = updatedAttacker.activeEffects.some(e => e.cardId === 2);
   if (hasVolley && !isSnapFireSecondAttack) {
-    const roll1 = rollD6() + getAttackModifiers(attacker, 'ranged');
-    const roll2 = rollD6() + getAttackModifiers(attacker, 'ranged');
-    attackRoll = Math.max(roll1, roll2);
-    logs.push(`${attacker.name} uses Volley! Roll 1: ${roll1}, Roll 2: ${roll2}, choosing higher: ${attackRoll}`);
+    const roll1 = rollDice(attacker.rangedDamageDice || '1d4') + damageModifier;
+    const roll2 = rollDice(attacker.rangedDamageDice || '1d4') + damageModifier;
+    finalDamageRoll = Math.max(roll1, roll2);
+    logs.push(`${attacker.name} uses Volley! Roll 1: ${roll1}, Roll 2: ${roll2}, choosing higher: ${finalDamageRoll}`);
   } else {
     // Apply Snap Fire penalty to second attack
     if (isSnapFireSecondAttack) {
-      attackRoll = Math.max(1, attackRoll - 2); // -2 attack for second snap fire attack
-      logs.push(`${attacker.name} second Snap Fire attack (with -2 penalty): ${attackRoll}`);
+      finalDamageRoll = Math.max(1, finalDamageRoll - 2); // -2 penalty for second snap fire attack
+      logs.push(`${attacker.name} second Snap Fire damage roll (with -2 penalty): ${finalDamageRoll}`);
     } else {
-      logs.push(`${attacker.name} ranged attack roll: ${attackRoll}`);
+      if (damageModifier > 0) {
+        logs.push(`${attacker.name} ranged damage roll: ${finalDamageRoll} (${attacker.rangedDamageDice || '1d4'} + ${damageModifier} from ${getClassName(attacker.class)})`);
+      } else {
+        logs.push(`${attacker.name} ranged damage roll: ${finalDamageRoll} (${attacker.rangedDamageDice || '1d4'})`);
+      }
     }
   }
   
@@ -250,19 +256,9 @@ export const performRangedAttack = (
   logs.push(`vs ${defender.name}'s armor: ${effectiveArmor} (${totalArmor}${ignoreArmor ? ' -1 from Careful Shot' : ''})`);
   
   // Resolve damage
-  if (attackRoll >= effectiveArmor) {
-    // Roll ranged damage dice
-    const baseDamage = rollDice(attacker.rangedDamageDice || '1d4');
-    const damageModifier = getDamageModifiers(attacker, 'ranged');
-    const damage = baseDamage + damageModifier;
-    
-    // Log damage calculation with class ability info
-    const className = getClassName(attacker.class);
-    if (damageModifier > 0) {
-      logs.push(`${attacker.name} rolls ${attacker.rangedDamageDice || '1d4'} + ${damageModifier} (${className} class ability) = ${damage} damage`);
-    } else {
-      logs.push(`${attacker.name} rolls ${attacker.rangedDamageDice || '1d4'} = ${damage} damage`);
-    }
+  if (finalDamageRoll >= effectiveArmor) {
+    // Full damage to HP
+    const damage = finalDamageRoll;
     
     const actualDamage = Math.min(damage, updatedDefender.tempHp + updatedDefender.hp);
     
@@ -328,29 +324,28 @@ export const performMeleeAttack = (
   let updatedAttacker = { ...attacker };
   let updatedDefender = { ...defender };
   
-  // Roll attack
-  const attackRoll = rollD6() + getAttackModifiers(attacker, 'melee');
-  logs.push(`${attacker.name} melee attack roll: ${attackRoll}`);
+  // Roll damage dice (this is the single roll that determines both hit and damage)
+  let damageRoll = rollDice(attacker.meleeDamageDice || '1d6');
+  const damageModifier = getDamageModifiers(attacker, 'melee');
+  const finalDamageRoll = damageRoll + damageModifier;
   
   // Check armor
   const totalArmor = defender.armorPlates + defender.tempArmorPlates;
   const ignoreArmor = attacker.activeEffects.some(e => e.cardId === 7); // Feint
   const effectiveArmor = ignoreArmor ? Math.max(0, totalArmor - 1) : totalArmor;
   
+  if (damageModifier > 0) {
+    logs.push(`${attacker.name} melee damage roll: ${finalDamageRoll} (${attacker.meleeDamageDice || '1d6'} + ${damageModifier} from ${getClassName(attacker.class)})`);
+  } else {
+    logs.push(`${attacker.name} melee damage roll: ${finalDamageRoll} (${attacker.meleeDamageDice || '1d6'})`);
+  }
+  
   logs.push(`vs ${defender.name}'s armor: ${effectiveArmor} (${totalArmor}${ignoreArmor ? ' -1 from Feint' : ''})`);
   
   // Resolve damage
-  if (attackRoll >= effectiveArmor) {
-    // Full damage to HP using custom damage dice
-    let damage = rollDice(attacker.meleeDamageDice || '1d6');
-    const damageModifier = getDamageModifiers(attacker, 'melee');
-    
-    if (damageModifier > 0) {
-      damage += damageModifier;
-      logs.push(`Damage roll (${attacker.meleeDamageDice || '1d6'} + ${damageModifier} from ${getClassName(attacker.class)}): ${damage}`);
-    } else {
-      logs.push(`Damage roll (${attacker.meleeDamageDice || '1d6'}): ${damage}`);
-    }
+  if (finalDamageRoll >= effectiveArmor) {
+    // Full damage to HP
+    const damage = finalDamageRoll;
     
     // Apply damage
     if (updatedDefender.tempHp > 0) {

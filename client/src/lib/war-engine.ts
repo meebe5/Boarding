@@ -9,8 +9,9 @@ export const rollD4 = (): number => Math.floor(Math.random() * 4) + 1;
 export const getCardModifiers = (character: Character, action: 'attack' | 'damage' | 'defense' | 'armor') => {
   let modifier = 0;
   
-  // Check character's own used cards
-  character.usedCards.forEach(cardId => {
+  // Check character's active effects
+  character.activeEffects.forEach(effect => {
+    const cardId = effect.cardId;
     switch (cardId) {
       case 2: // +2 Attack for your next attack
         if (action === 'attack') modifier += 2;
@@ -106,36 +107,33 @@ export const simulateAttack = (
 ): { attacker: Character; defender: Character; log: string[] } => {
   const logs: string[] = [];
   
-  // Step 1: Roll 1d6 for attack vs enemy armor
-  const attackRoll = rollD6() + attackModifier;
-  const defenderArmor = defender.armor + defender.tempArmor + getCardModifiers(defender, 'armor');
+  // Roll 1d6 for damage (single roll determines both hit and damage)
+  const damageRoll = rollD6() + damageModifier;
+  const defenderArmor = defender.armorPlates + defender.tempArmorPlates + getCardModifiers(defender, 'armor');
   
-  // Apply armor reduction from card 10 BEFORE attack roll comparison
+  // Apply armor reduction from card 10 BEFORE damage roll comparison
   let effectiveArmor = defenderArmor;
-  if (attacker.usedCards.includes(10)) {
+  if (attacker.activeEffects.some(e => e.cardId === 10)) {
     effectiveArmor = Math.max(0, defenderArmor - 2);
     logs.push(`${defender.name}'s armor reduced by 2 from armor breach effect (${defenderArmor} → ${effectiveArmor})`);
   }
   
-  logs.push(`${attacker.name} attacks ${defender.name} (${attackRoll} vs ${effectiveArmor} armor)`);
+  logs.push(`${attacker.name} attacks ${defender.name} (damage roll: ${damageRoll} vs ${effectiveArmor} armor)`);
   
   let updatedAttacker = { ...attacker };
   let updatedDefender = { ...defender };
   
   // Meets or beats armor = hit
-  if (attackRoll >= effectiveArmor) {
-    // Step 2: Roll 1d6 for damage (no armor reduction on damage roll)
-    const damageRoll = rollD6() + damageModifier;
+  if (damageRoll >= effectiveArmor) {
+    // Full damage to HP
     const finalDamage = damageRoll;
-    
-    logs.push(`Hit! Rolling ${damageRoll} damage`);
     
     const oldDefenderHp = updatedDefender.hp;
     updatedDefender.hp = Math.max(0, updatedDefender.hp - finalDamage);
     updatedDefender.isAlive = updatedDefender.hp > 0;
     
     // Handle card 5 effect (stay at 1 HP if you hit 0) - only if card was used this turn
-    if (updatedDefender.hp === 0 && updatedDefender.usedCards.includes(5)) {
+    if (updatedDefender.hp === 0 && updatedDefender.activeEffects.some(e => e.cardId === 5)) {
       updatedDefender.hp = 1;
       updatedDefender.isAlive = true;
       logs.push(`${defender.name} stays at 1 HP due to defensive anchor!`);
@@ -148,7 +146,7 @@ export const simulateAttack = (
     }
     
     // Apply thorns damage from card 8 - only if defender had card active
-    if (updatedDefender.usedCards.includes(8) && oldDefenderHp > 0) {
+    if (updatedDefender.activeEffects.some(e => e.cardId === 8) && oldDefenderHp > 0) {
       const oldAttackerHp = updatedAttacker.hp;
       updatedAttacker.hp = Math.max(0, updatedAttacker.hp - 2);
       updatedAttacker.isAlive = updatedAttacker.hp > 0;
@@ -172,7 +170,7 @@ export const simulateDefend = (character: Character): { character: Character; lo
   
   const updatedCharacter = {
     ...character,
-    tempArmor: character.tempArmor + armorGain,
+    tempArmorPlates: character.tempArmorPlates + armorGain,
   };
   
   logs.push(`${character.name} defends, gaining +${armorGain} temporary armor`);
@@ -188,20 +186,11 @@ export const processTurnEnd = (character: Character): Character => {
     .filter(effect => effect.turnsRemaining > 0);
   
   // Reset temporary armor at start of next turn
-  // Clear used cards that are single-use effects (not healing)
-  const clearedUsedCards = character.usedCards.filter(cardId => {
-    // Card 1 (healing) effects are permanent, keep the card as used
-    // Cards 2,3,4,6,9 are buffs that last until next turn - clear them
-    // Card 5 (defensive anchor) lasts until next turn - clear it
-    // Card 7,8,10 are effects that last until next turn - clear them
-    return cardId === 1; // Only keep healing card as permanently used
-  });
-  
+  // Reset temporary armor at turn end
   return {
     ...character,
-    tempArmor: 0,
+    tempArmorPlates: 0,
     activeEffects: updatedEffects,
-    usedCards: clearedUsedCards,
   };
 };
 
@@ -240,10 +229,10 @@ export const simulateWarRound = (
   
   const allCharacters = [...updatedGroup1, ...updatedGroup2];
   
-  // Determine turn order based on initiative
+  // Determine turn order based on random order (shuffled)
   const turnOrder = allCharacters
     .filter(c => c.isAlive)
-    .sort((a, b) => b.initiative - a.initiative);
+    .sort(() => Math.random() - 0.5);
   
   for (const character of turnOrder) {
     if (!character.isAlive) continue;
@@ -266,10 +255,11 @@ export const simulateWarRound = (
     combatLogs.push(`--- ${refreshedChar.name}'s Turn ---`);
     
     // Pick a random card to play (if available)
-    const availableCards = refreshedChar.cards.filter(card => !refreshedChar.usedCards.includes(card));
+    const availableCards = refreshedChar.cards.filter(card => 
+      !refreshedChar.activeEffects.some(e => e.cardId === card)
+    );
     if (availableCards.length > 0) {
       const randomCard = availableCards[Math.floor(Math.random() * availableCards.length)];
-      refreshedChar.usedCards.push(randomCard);
       
       // Log card usage
       combatLogs.push(`${refreshedChar.name} plays Card ${randomCard}: ${CARD_EFFECTS[randomCard as keyof typeof CARD_EFFECTS]}`);
