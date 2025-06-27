@@ -553,6 +553,11 @@ export function WarSystem({ groups, onUpdateGroups }: WarSystemProps) {
                   ))}
                 </SelectContent>
               </Select>
+              {selectedGroup1 && groups[selectedGroup1] && (
+                <div className="text-xs text-cyan-400 mt-1">
+                  HP: {groups[selectedGroup1].filter(c => c.isAlive).reduce((sum, char) => sum + Math.max(0, char.hp), 0)}
+                </div>
+              )}
             </div>
             
             <div>
@@ -569,6 +574,11 @@ export function WarSystem({ groups, onUpdateGroups }: WarSystemProps) {
                   ))}
                 </SelectContent>
               </Select>
+              {selectedGroup2 && groups[selectedGroup2] && (
+                <div className="text-xs text-cyan-400 mt-1">
+                  HP: {groups[selectedGroup2].filter(c => c.isAlive).reduce((sum, char) => sum + Math.max(0, char.hp), 0)}
+                </div>
+              )}
             </div>
 
             <Button 
