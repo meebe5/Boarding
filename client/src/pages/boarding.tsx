@@ -249,7 +249,7 @@ export default function BoardingPage() {
       {/* Mobile WAR System Modal */}
       {isMobile ? (
         <Sheet open={warSystemOpen} onOpenChange={setWarSystemOpen}>
-          <SheetContent side="bottom" className="h-[80vh] p-0">
+          <SheetContent side="bottom" className="h-[80vh] p-0 flex flex-col">
             <WarSystem 
               groups={migratedGroups} 
               onUpdateGroups={setGroups}

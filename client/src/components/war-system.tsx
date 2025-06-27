@@ -505,27 +505,33 @@ export function WarSystem({ groups, onUpdateGroups }: WarSystemProps) {
   };
 
   return (
-    <div className="war-system bg-gray-900 border border-gray-700 rounded-lg p-6 mobile-safe-bottom">
-      <h2 className="text-xl font-bold text-white mb-4 flex items-center gap-2">
+    <div className="war-system bg-gray-900 border border-gray-700 rounded-lg p-4 md:p-6 mobile-safe-bottom flex flex-col h-full">
+      <h2 className="text-lg md:text-xl font-bold text-white mb-3 md:mb-4 flex items-center gap-2">
         ⚔️ WAR SIMULATION SYSTEM
       </h2>
 
-      {/* Group Selection */}
-      <div className="mb-4">
+      {/* Group Selection - Compact on mobile */}
+      <div className="mb-3 md:mb-4 flex-shrink-0">
         <h3 className="text-sm font-semibold text-gray-300 mb-2">SELECT OPPOSING GROUPS</h3>
-        <div className="grid grid-cols-2 gap-4">
+        <div className="grid grid-cols-2 gap-2 md:gap-4">
           {groupNames.slice(0, 2).map((groupName, index) => (
-            <div key={groupName} className="bg-gray-800 rounded p-3 border border-gray-600">
-              <div className="font-bold text-blue-400 mb-2">{groupName}</div>
+            <div key={groupName} className="bg-gray-800 rounded p-2 md:p-3 border border-gray-600">
+              <div className="font-bold text-blue-400 mb-1 md:mb-2 text-sm md:text-base">{groupName}</div>
               <div className="text-xs text-gray-300">
                 Total HP: {groups[groupName]?.filter(c => c.isAlive).reduce((sum, char) => sum + Math.max(0, char.hp), 0) || 0}
               </div>
-              <div className="flex flex-wrap gap-1 mt-2">
-                {groups[groupName]?.filter(c => c.isAlive).map(char => (
-                  <Badge key={char.id} variant="secondary" className="text-xs">
-                    {char.name.split(' ')[0]}
-                  </Badge>
-                ))}
+              {/* Mobile: Show only count, Desktop: Show names */}
+              <div className="mt-1 md:mt-2">
+                <div className="block md:hidden text-xs text-gray-400">
+                  {groups[groupName]?.filter(c => c.isAlive).length || 0} combatants
+                </div>
+                <div className="hidden md:flex flex-wrap gap-1">
+                  {groups[groupName]?.filter(c => c.isAlive).map(char => (
+                    <Badge key={char.id} variant="secondary" className="text-xs">
+                      {char.name.split(' ')[0]}
+                    </Badge>
+                  ))}
+                </div>
               </div>
             </div>
           ))}
@@ -533,11 +539,11 @@ export function WarSystem({ groups, onUpdateGroups }: WarSystemProps) {
       </div>
 
       {/* War Controls */}
-      <div className="flex gap-2 mb-4">
+      <div className="flex gap-2 mb-3 md:mb-4 flex-shrink-0 flex-wrap">
         <Button 
           onClick={() => groupNames.length >= 2 && startWar(groupNames[0], groupNames[1])}
           disabled={isSimulating || isPaused || groupNames.length < 2}
-          className="bg-red-600 hover:bg-red-700"
+          className="bg-red-600 hover:bg-red-700 text-sm md:text-base"
         >
           {isSimulating ? 'SIMULATING...' : 'START WAR'}
         </Button>
@@ -546,7 +552,7 @@ export function WarSystem({ groups, onUpdateGroups }: WarSystemProps) {
           <Button 
             onClick={continueWar}
             disabled={isSimulating}
-            className="bg-blue-600 hover:bg-blue-700"
+            className="bg-blue-600 hover:bg-blue-700 text-sm md:text-base"
           >
             CONTINUE ROUND {currentRound}
           </Button>
@@ -555,18 +561,18 @@ export function WarSystem({ groups, onUpdateGroups }: WarSystemProps) {
         <Button 
           onClick={resetWar}
           variant="outline"
-          className="border-gray-600"
+          className="border-gray-600 text-sm md:text-base"
         >
           RESET
         </Button>
       </div>
 
-      {/* Combat Log */}
-      <div className="bg-black rounded border border-gray-600 h-96 md:mb-0 mb-20">
-        <div className="p-3 border-b border-gray-600">
+      {/* Combat Log - Takes remaining space */}
+      <div className="bg-black rounded border border-gray-600 flex-1 flex flex-col min-h-0">
+        <div className="p-2 md:p-3 border-b border-gray-600 flex-shrink-0">
           <h3 className="text-sm font-semibold text-green-400">COMBAT LOG</h3>
         </div>
-        <ScrollArea className="h-80 p-3">
+        <ScrollArea className="flex-1 p-2 md:p-3">
           <div className="font-mono text-xs whitespace-pre-line">
             {combatLog.length === 0 ? (
               <div className="text-gray-500">Waiting for combat to begin...</div>
