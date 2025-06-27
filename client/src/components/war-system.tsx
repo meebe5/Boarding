@@ -170,7 +170,7 @@ export function WarSystem({ groups, onUpdateGroups, combatLog, onCombatLogUpdate
     
     // Check if war should end after this round is complete
     if (!isWarActive(updatedGroup1, updatedGroup2)) {
-      endWar(updatedGroup1, updatedGroup2, group1Name, group2Name);
+      endWar(updatedGroup1, updatedGroup2, group1Name, group2Name, updatedLog);
       return;
     }
 
@@ -484,7 +484,7 @@ export function WarSystem({ groups, onUpdateGroups, combatLog, onCombatLogUpdate
     }
   };
 
-  const endWar = (group1: Character[], group2: Character[], group1Name: string, group2Name: string) => {
+  const endWar = (group1: Character[], group2: Character[], group1Name: string, group2Name: string, finalRoundLog?: string[]) => {
     const group1TotalHP = group1.filter(c => c.isAlive).reduce((sum, char) => sum + Math.max(0, char.hp), 0);
     const group2TotalHP = group2.filter(c => c.isAlive).reduce((sum, char) => sum + Math.max(0, char.hp), 0);
     
@@ -501,7 +501,9 @@ export function WarSystem({ groups, onUpdateGroups, combatLog, onCombatLogUpdate
       endLogs.push(`\n⚖️ DRAW! Both groups eliminated`);
     }
 
-    onCombatLogUpdate([...combatLog, ...endLogs]);
+    // Use the final round log if provided, otherwise use current combatLog
+    const baseLog = finalRoundLog || combatLog;
+    onCombatLogUpdate([...baseLog, ...endLogs]);
     setIsSimulating(false);
     setIsPaused(false);
     setCurrentWarState(null);
@@ -574,7 +576,7 @@ export function WarSystem({ groups, onUpdateGroups, combatLog, onCombatLogUpdate
             <div>
               <label className="text-xs text-gray-400 mb-1 block">Group 1</label>
               <Select value={selectedGroup1} onValueChange={setSelectedGroup1}>
-                <SelectTrigger className="h-9 text-sm">
+                <SelectTrigger className="h-9 text-sm bg-white dark:bg-gray-800 text-black dark:text-white border-gray-300 dark:border-gray-600">
                   <SelectValue placeholder="Select first group" />
                 </SelectTrigger>
                 <SelectContent>
@@ -595,7 +597,7 @@ export function WarSystem({ groups, onUpdateGroups, combatLog, onCombatLogUpdate
             <div>
               <label className="text-xs text-gray-400 mb-1 block">Group 2</label>
               <Select value={selectedGroup2} onValueChange={setSelectedGroup2}>
-                <SelectTrigger className="h-9 text-sm">
+                <SelectTrigger className="h-9 text-sm bg-white dark:bg-gray-800 text-black dark:text-white border-gray-300 dark:border-gray-600">
                   <SelectValue placeholder="Select second group" />
                 </SelectTrigger>
                 <SelectContent>
@@ -676,7 +678,7 @@ export function WarSystem({ groups, onUpdateGroups, combatLog, onCombatLogUpdate
           <Button 
             onClick={resetWar}
             variant="outline"
-            className="border-gray-600 text-sm md:text-base"
+            className="border-gray-600 text-black dark:text-white bg-white dark:bg-gray-800 text-sm md:text-base"
           >
             RESET
           </Button>
