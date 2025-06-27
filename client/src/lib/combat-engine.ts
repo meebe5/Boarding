@@ -388,11 +388,7 @@ export const performRangedAttack = (
     updatedDefender.isAlive = updatedDefender.hp > 0;
     updatedDefender.lastDamageType = 'ranged';
     
-    // Ricochet effect
-    if (attacker.activeEffects.some(e => e.cardId === 5) && totalArmor > 0) {
-      updatedDefender.hp = Math.max(0, updatedDefender.hp - 1);
-      logs.push(`Ricochet deals 1 additional damage to ${defender.name}`);
-    }
+    // Ricochet effect is only applied when armor plates are lost, not when HP is damaged
     
   } else {
     // Hit armor - reduce armor plates by 1
@@ -517,6 +513,12 @@ export const performMeleeAttack = (
     if (remainingArmorLoss > 0) {
       updatedDefender.armorPlates = Math.max(0, updatedDefender.armorPlates - remainingArmorLoss);
       logs.push(`${defender.name} loses ${remainingArmorLoss} armor plates`);
+    }
+    
+    // Ricochet effect: if armor plates were lost, deal 1 HP damage
+    if (attacker.activeEffects.some(e => e.cardId === 5)) {
+      updatedDefender.hp = Math.max(0, updatedDefender.hp - 1);
+      logs.push(`Ricochet! Armor plate loss causes 1 HP damage to ${defender.name}`);
     }
     
     // Overhead Strike self-damage
