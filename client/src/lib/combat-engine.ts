@@ -531,3 +531,66 @@ export const performRepair = (
   
   return { character: updatedCharacter, log: logs };
 };
+
+// Support class repair decision making
+export const shouldPerformRepairs = (character: Character, allies: Character[]): { shouldRepair: boolean; target?: Character; repairType?: 'ARMOR' | 'GUN' } => {
+  if (character.junkTokens === 0) return { shouldRepair: false };
+  
+  // Ranged support (Scavenger) - prioritize gun repairs for Engineers and Shooters
+  if (character.class === 3) {
+    const rangedAllies = allies.filter(ally => 
+      ally.isAlive && 
+      (ally.class === 1 || ally.class === 2) && // Shooter or Engineer
+      ally.hasRangedWeapon && 
+      ally.gunPoints < (ally.maxGunPoints || 4)
+    );
+    
+    if (rangedAllies.length > 0) {
+      // Find ally with lowest gun points
+      const target = rangedAllies.reduce((lowest, current) => 
+        current.gunPoints < lowest.gunPoints ? current : lowest
+      );
+      return { shouldRepair: true, target, repairType: 'GUN' };
+    }
+    
+    // Check if self needs gun repair
+    if (character.hasRangedWeapon && character.gunPoints < (character.maxGunPoints || 4)) {
+      return { shouldRepair: true, target: character, repairType: 'GUN' };
+    }
+  }
+  
+  // Melee support (Tinkerer) - prioritize armor repairs for Brute and Breaker
+  if (character.class === 4) {
+    const meleeAllies = allies.filter(ally => 
+      ally.isAlive && 
+      (ally.class === 5 || ally.class === 6) && // Brute or Breaker
+      ally.armorPlates < ally.maxArmorPlates
+    );
+    
+    if (meleeAllies.length > 0) {
+      // Find ally with lowest armor
+      const target = meleeAllies.reduce((lowest, current) => 
+        current.armorPlates < lowest.armorPlates ? current : lowest
+      );
+      return { shouldRepair: true, target, repairType: 'ARMOR' };
+    }
+    
+    // Check if self needs armor repair
+    if (character.armorPlates < character.maxArmorPlates) {
+      return { shouldRepair: true, target: character, repairType: 'ARMOR' };
+    }
+  }
+  
+  return { shouldRepair: false };
+};
+
+// Check if character needs junk tokens
+export const needsJunkTokens = (character: Character, allies: Character[]): boolean => {
+  const repairDecision = shouldPerformRepairs(character, allies);
+  return repairDecision.shouldRepair && character.junkTokens === 0;
+};
+
+// Check if a card gives junk tokens (these don't count against card usage limit)
+export const isJunkTokenCard = (cardId: number): boolean => {
+  return cardId === 11 || cardId === 13; // Junk Material or Scrap Scan
+};
